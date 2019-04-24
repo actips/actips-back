@@ -4,6 +4,9 @@ from django_base.base_settings import *
 
 INSTALLED_APPS += [
     'core',
+    'api_admin',
+    'api_client',
+    'django_base.base_media',
 ]
 
 MIDDLEWARE += [
