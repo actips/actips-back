@@ -1,0 +1,4 @@
+[submodule "django_base"]
+	path = django_base
+	url = https://github.com/easecloud/django_base
+	branch = master
