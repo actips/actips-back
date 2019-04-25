@@ -156,6 +156,9 @@ class ProblemCategory(HierarchicalModel):
         verbose_name_plural = '问题分类'
         db_table = 'problem_category'
 
+    def __str__(self):
+        return self.name
+
 
 class ProblemPost(UserOwnedModel):
     title = models.CharField(

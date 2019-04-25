@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -52,3 +52,39 @@ class MemberViewSet(viewsets.GenericViewSet):
         if not member:
             raise AppErrors.ERROR_MEMBER_INEXISTS
         return Response(data=s.MemberSerializer(member).data)
+
+
+class OnlineJudgeSiteViewSet(mixins.ListModelMixin,
+                             mixins.RetrieveModelMixin,
+                             viewsets.GenericViewSet):
+    queryset = m.OnlineJudgeSite.objects.all()
+    serializer_class = s.OnlineJudgeSiteSerializer
+    filter_fields = '__all__'
+    ordering = ['-pk']
+
+
+class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
+                                mixins.RetrieveModelMixin,
+                                viewsets.GenericViewSet):
+    queryset = m.OnlineJudgeProblem.objects.all()
+    serializer_class = s.OnlineJudgeProblemSerializer
+    filter_fields = '__all__'
+    ordering = ['-pk']
+
+
+class ProblemPostViewSet(mixins.ListModelMixin,
+                         mixins.RetrieveModelMixin,
+                         viewsets.GenericViewSet):
+    queryset = m.ProblemPost.objects.all()
+    serializer_class = s.ProblemPostSerializer
+    filter_fields = '__all__'
+    ordering = ['-pk']
+
+
+class ProblemCategoryViewSet(mixins.ListModelMixin,
+                             mixins.RetrieveModelMixin,
+                             viewsets.GenericViewSet):
+    queryset = m.ProblemCategory.objects.all()
+    serializer_class = s.ProblemCategorySerializer
+    filter_fields = '__all__'
+    ordering = ['-pk']
