@@ -37,6 +37,12 @@ class MemberViewSet(viewsets.GenericViewSet):
         login(request, member.user)
         return u.response_success('登录成功')
 
+    @action(methods=['POST'], detail=False)
+    def logout(self, request):
+        from django.contrib.auth import logout
+        logout(request)
+        return u.response_success('登录成功')
+
     @action(methods=['GET'], detail=False)
     def current(self, request):
         # 尚未登录
