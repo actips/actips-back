@@ -31,7 +31,7 @@ ROOT_URLCONF = 'core.urls'
 
 # ============== REST FRAMEWORK ================
 
-REST_FRAMEWORK['EXCEPTION_HANDLER'] = 'apps.core.exceptions.exception_handler'
+REST_FRAMEWORK['EXCEPTION_HANDLER'] = 'core.exceptions.exception_handler'
 
 # =========== CRON =======================
 

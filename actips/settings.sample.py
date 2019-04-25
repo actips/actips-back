@@ -33,4 +33,7 @@ SMS_TEMPLATES = dict(
 )
 SMS_DEBUG = True  # 不真正发送短信，将验证码直接返回
 
+# ================== Business ============================
 
+WECHAT_API_ROOT = 'https://wx.easecloud.cn/'
+WECHAT_APPID = 'wx765be0001df065a6'
