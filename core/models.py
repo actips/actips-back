@@ -1,4 +1,5 @@
 import json
+import re
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -74,9 +75,10 @@ class OAuthEntry(AbstractOAuthEntry):
     def ensure_member(self):
         if not self.member:
             # 自动挂入用户
+            from django.contrib.auth.hashers import make_password
             user, created = User.objects.get_or_create(
                 username=self.openid,
-                defaults=dict(password=None),
+                defaults=dict(password=make_password(None)),
             )
             self.member = Member.objects.create(user=user, nickname=self.nickname)
             self.save()
@@ -87,6 +89,11 @@ class OnlineJudgeSite(models.Model):
     name = models.CharField(
         verbose_name='站点名称',
         max_length=100,
+    )
+
+    code = models.CharField(
+        verbose_name='简写代码',
+        max_length=20,
     )
 
     homepage = models.CharField(
@@ -100,10 +107,26 @@ class OnlineJudgeSite(models.Model):
         help_text='题目的网址链接，其中用{num}替代题目编号可以',
     )
 
+    problem_fail_regex = models.CharField(
+        verbose_name='抓取题目错误正则表达式',
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='有些OJ没有找到题目也会返回200响应，这个时候需要用正则辅助判断是否找不到题目',
+    )
+
     problem_title_regex = models.CharField(
         verbose_name='标题提取正则表达式',
         max_length=255,
         help_text='正则表达式字符串，提取第一个匹配组作为标题',
+    )
+
+    problem_content_css_selector = models.CharField(
+        verbose_name='内容提取 css 选择器',
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='通过抓取题目的网页 html 内容提取题目正文的 css 选择器',
     )
 
     class Meta:
@@ -111,8 +134,48 @@ class OnlineJudgeSite(models.Model):
         verbose_name_plural = 'OJ站点'
         db_table = 'online_judge_site'
 
-    def ping_problem(self):
-        pass
+    def __str__(self):
+        return '[{}] {}'.format(self.code, self.name)
+
+    def ping_problem(self, num, force_reload=False):
+        # 使用现存的题目
+        problem = OnlineJudgeProblem.objects.filter(site=self, num=num).first()
+        if problem and not force_reload:
+            return problem
+        # 重新抓取
+        from urllib.request import urlopen
+        url = self.problem_url_template.format(num=num)
+        resp = urlopen(url)
+        body = resp.read().decode()
+        # 判断返回的网页是否一个合法的题目
+        pattern = re.compile(self.problem_fail_regex, re.MULTILINE)
+        if self.problem_fail_regex and pattern.search(body):
+            raise AppErrors.ERROR_FETCH_PROBLEM_FAIL_REGEX_MATCHED
+        # 抓取标题
+        pattern = re.compile(self.problem_title_regex, re.MULTILINE)
+        result = pattern.findall(body)
+        if not result:
+            raise AppErrors.ERROR_FETCH_PROBLEM_TITLE_NOT_MATCH
+        title = result[0]
+        # 解析题目正文内容
+        if self.problem_content_css_selector:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(body, 'lxml')
+            result = soup.select(self.problem_content_css_selector)
+            if result:
+                body = result[0]
+
+        # 写入题目
+        problem, created = OnlineJudgeProblem.objects.get_or_create(
+            site=self, num=num, defaults=dict(
+                title=title, content=body
+            )
+        )
+        if not created:
+            problem.title = title
+            problem.content = body
+            problem.save()
+        return problem
 
 
 class OnlineJudgeProblem(models.Model):
@@ -144,6 +207,12 @@ class OnlineJudgeProblem(models.Model):
         db_table = 'online_judge_problem'
         unique_together = (('site', 'num'),)
 
+    def code(self):
+        return '{}{}'.format(self.site.code, self.num)
+
+    def online_judge_url(self):
+        return self.site.problem_url_template.format(num=self.num)
+
 
 class ProblemCategory(HierarchicalModel):
     name = models.CharField(
@@ -167,10 +236,6 @@ class ProblemPost(UserOwnedModel):
         default='',
     )
 
-    excerpt = models.TextField(
-        verbose_name='摘要',
-    )
-
     content = models.TextField(
         verbose_name='正文内容',
         blank=True,
@@ -187,6 +252,16 @@ class ProblemPost(UserOwnedModel):
         verbose_name='标记分类',
         to='ProblemCategory',
         related_name='posts',
+    )
+
+    date_created = models.DateTimeField(
+        verbose_name='创建时间',
+        auto_now_add=True,
+    )
+
+    date_updated = models.DateTimeField(
+        verbose_name='修改时间',
+        auto_now=True,
     )
 
     class Meta:

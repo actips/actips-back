@@ -62,6 +62,15 @@ class OnlineJudgeSiteViewSet(mixins.ListModelMixin,
     filter_fields = '__all__'
     ordering = ['-pk']
 
+    @action(methods=['POST'], detail=True)
+    def ping_problem(self, request, pk):
+        site = self.get_object()
+        # TODO: 调试方便，总是强制重新抓取
+        problem = site.ping_problem(request.data.get('num'), force_reload=True)
+        if not problem:
+            return u.response_fail('没有找到题目')
+        return Response(data=s.OnlineJudgeProblemSerializer(problem).data)
+
 
 class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
                                 mixins.RetrieveModelMixin,
@@ -72,13 +81,24 @@ class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
     ordering = ['-pk']
 
 
-class ProblemPostViewSet(mixins.ListModelMixin,
+class ProblemPostViewSet(mixins.CreateModelMixin,
+                         mixins.ListModelMixin,
                          mixins.RetrieveModelMixin,
+                         mixins.DestroyModelMixin,
                          viewsets.GenericViewSet):
     queryset = m.ProblemPost.objects.all()
     serializer_class = s.ProblemPostSerializer
     filter_fields = '__all__'
     ordering = ['-pk']
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        item = self.get_object()
+        if request.user != item.author:
+            raise AppErrors.ERROR_DELETE_NOT_PERMITTED
+        return super().destroy(request, *args, **kwargs)
 
 
 class ProblemCategoryViewSet(mixins.ListModelMixin,

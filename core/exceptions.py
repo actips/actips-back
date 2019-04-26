@@ -12,6 +12,12 @@ class AppErrors:
     ERROR_USER_INACTIVE = AppError(20002, '账户已被冻结')
     ERROR_NOT_SIGN_IN = AppError(20003, '用户尚未登录')
     ERROR_MEMBER_INEXISTS = AppError(20004, '用户不存在')
+    ERROR_DELETE_NOT_PERMITTED = AppError(20005, '无权删除')
+    ERROR_UPDATE_NOT_PERMITTED = AppError(20006, '无权修改')
+
+    ERROR_FETCH_PROBLEM_STATUS_ERROR = AppError(30001, '抓取题目错误：题目链接返回非正常状态码')
+    ERROR_FETCH_PROBLEM_FAIL_REGEX_MATCHED = AppError(30002, '抓取题目错误：目标页面匹配了题目为空的正则表达式')
+    ERROR_FETCH_PROBLEM_TITLE_NOT_MATCH = AppError(30003, '抓取题目错误：匹配不到题目标题')
 
 
 def exception_handler(exc, context):
