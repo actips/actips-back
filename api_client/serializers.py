@@ -28,7 +28,7 @@ class OnlineJudgeProblemSerializer(serializers.ModelSerializer):
 
 
 class ProblemCategorySerializer(serializers.ModelSerializer):
-    post_count = serializers.ReadOnlyField(source='posts.count')
+    post_count = serializers.ReadOnlyField()
 
     class Meta:
         model = m.ProblemCategory

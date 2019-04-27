@@ -119,7 +119,8 @@ class ProblemPostViewSet(mixins.CreateModelMixin,
 class ProblemCategoryViewSet(mixins.ListModelMixin,
                              mixins.RetrieveModelMixin,
                              viewsets.GenericViewSet):
-    queryset = m.ProblemCategory.objects.all()
+    queryset = m.ProblemCategory.objects.all()\
+        .annotate(post_count=models.Count('posts'))
     serializer_class = s.ProblemCategorySerializer
     filter_fields = '__all__'
     ordering = ['-pk']
