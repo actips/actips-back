@@ -109,3 +109,5 @@ venv.bak/
 # Custom
 /.idea
 /actips/settings.py
+/media
+/static

@@ -1,14 +1,14 @@
 from django.conf import settings
-from django.shortcuts import render
+from django.db import models
 from rest_framework import viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 import core.models as m
 from core.exceptions import AppErrors
-from django_base.base_utils.app_error.utils import validate_params
-from . import serializers as s
+from django_base.base_media.models import Image
 from django_base.base_utils import utils as u
+from . import serializers as s
 
 
 class MemberViewSet(viewsets.GenericViewSet):
@@ -84,14 +84,23 @@ class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
 class ProblemPostViewSet(mixins.CreateModelMixin,
                          mixins.ListModelMixin,
                          mixins.RetrieveModelMixin,
+                         mixins.UpdateModelMixin,
                          mixins.DestroyModelMixin,
                          viewsets.GenericViewSet):
     queryset = m.ProblemPost.objects.all()
     serializer_class = s.ProblemPostSerializer
     filter_fields = '__all__'
     ordering = ['-pk']
+    search_fields = ['title', 'problems__title']
+    allowed_deep_params = [
+        'categories__id',
+        'problems__site__id',
+    ]
 
     def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
@@ -100,11 +109,26 @@ class ProblemPostViewSet(mixins.CreateModelMixin,
             raise AppErrors.ERROR_DELETE_NOT_PERMITTED
         return super().destroy(request, *args, **kwargs)
 
+    def update(self, request, *args, **kwargs):
+        item = self.get_object()
+        if request.user != item.author:
+            raise AppErrors.ERROR_UPDATE_NOT_PERMITTED
+        return super().update(request, *args, **kwargs)
+
 
 class ProblemCategoryViewSet(mixins.ListModelMixin,
                              mixins.RetrieveModelMixin,
                              viewsets.GenericViewSet):
     queryset = m.ProblemCategory.objects.all()
     serializer_class = s.ProblemCategorySerializer
+    filter_fields = '__all__'
+    ordering = ['-pk']
+
+
+class ImageViewSet(mixins.CreateModelMixin,
+                   mixins.RetrieveModelMixin,
+                   viewsets.GenericViewSet):
+    queryset = Image.objects.all()
+    serializer_class = s.ImageSerializer
     filter_fields = '__all__'
     ordering = ['-pk']

@@ -1,6 +1,7 @@
 from rest_framework import serializers, mixins
 
 import core.models as m
+from django_base.base_media.models import Image
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -27,6 +28,8 @@ class OnlineJudgeProblemSerializer(serializers.ModelSerializer):
 
 
 class ProblemCategorySerializer(serializers.ModelSerializer):
+    post_count = serializers.ReadOnlyField(source='posts.count')
+
     class Meta:
         model = m.ProblemCategory
         fields = '__all__'
@@ -44,4 +47,12 @@ class ProblemPostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = m.ProblemPost
+        fields = '__all__'
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    url = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Image
         fields = '__all__'
