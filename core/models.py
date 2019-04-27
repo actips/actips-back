@@ -162,6 +162,8 @@ class OnlineJudgeSite(models.Model):
             from bs4 import BeautifulSoup
             soup = BeautifulSoup(body, 'lxml')
             result = soup.select(self.problem_content_css_selector)
+            print(self.problem_content_css_selector)
+            print(result)
             if result:
                 body = result[0]
 
@@ -218,6 +220,7 @@ class ProblemCategory(HierarchicalModel):
     name = models.CharField(
         verbose_name='分类名称',
         max_length=100,
+        unique=True,
     )
 
     class Meta:
