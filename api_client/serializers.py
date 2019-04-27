@@ -36,6 +36,8 @@ class ProblemCategorySerializer(serializers.ModelSerializer):
 
 
 class ProblemPostSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(
+        read_only=True)
     problems_item = OnlineJudgeProblemSerializer(
         source='problems', many=True, read_only=True)
     categories_item = ProblemCategorySerializer(
