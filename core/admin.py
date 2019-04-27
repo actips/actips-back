@@ -8,6 +8,6 @@ for k, model in m.__dict__.items():
     # if issubclass(models.Model, type(model)):
     try:
         admin.site.register(model)
-        print(k, model)
+        # print(k, model)
     except:
         pass
