@@ -35,6 +35,11 @@ class MemberViewSet(viewsets.GenericViewSet):
         # 实施登陆
         from django.contrib.auth import login
         login(request, member.user)
+        m.UserLog.objects.create(
+            author=member.user,
+            action='LOGIN',
+            remark='PC微信扫码登录',
+        )
         return u.response_success('登录成功')
 
     @action(methods=['POST'], detail=False)
@@ -52,6 +57,14 @@ class MemberViewSet(viewsets.GenericViewSet):
         if not member:
             raise AppErrors.ERROR_MEMBER_INEXISTS
         return Response(data=s.MemberSerializer(member).data)
+
+    @action(methods=['GET'], detail=False)
+    def get_last_login_list(self, request):
+        count = int(request.query_params.get('count') or 10)
+        members = m.Member.objects.annotate(
+                last_login_time=models.Max('user__userlogs_owned__date_created'))\
+            .order_by('-last_login_time')[:count]
+        return Response(data=s.MemberSerializer(members, many=True).data)
 
 
 class OnlineJudgeSiteViewSet(mixins.ListModelMixin,

@@ -271,3 +271,27 @@ class ProblemPost(UserOwnedModel):
         verbose_name = '题解'
         verbose_name_plural = '题解'
         db_table = 'core_problem_post'
+
+
+class UserLog(UserOwnedModel):
+    date_created = models.DateTimeField(
+        verbose_name='时间',
+        auto_now_add=True,
+    )
+
+    action = models.CharField(
+        verbose_name='动作',
+        max_length=20,
+    )
+
+    remark = models.CharField(
+        verbose_name='备注',
+        max_length=45,
+        blank=True,
+        default='',
+    )
+
+    class Meta:
+        verbose_name = '用户日志'
+        verbose_name_plural = '用户日志'
+        db_table = 'core_user_log'
