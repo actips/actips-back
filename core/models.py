@@ -132,7 +132,7 @@ class OnlineJudgeSite(models.Model):
     class Meta:
         verbose_name = 'OJ站点'
         verbose_name_plural = 'OJ站点'
-        db_table = 'online_judge_site'
+        db_table = 'core_online_judge_site'
 
     def __str__(self):
         return '[{}] {}'.format(self.code, self.name)
@@ -206,7 +206,7 @@ class OnlineJudgeProblem(models.Model):
     class Meta:
         verbose_name = 'OJ问题'
         verbose_name_plural = 'OJ问题'
-        db_table = 'online_judge_problem'
+        db_table = 'core_online_judge_problem'
         unique_together = (('site', 'num'),)
 
     def code(self):
@@ -249,8 +249,6 @@ class ProblemPost(UserOwnedModel):
         verbose_name='对应题目',
         to='OnlineJudgeProblem',
         related_name='posts',
-        null=True,
-        blank=True,
         on_delete=models.PROTECT,
     )
 
