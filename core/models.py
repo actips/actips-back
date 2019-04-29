@@ -162,8 +162,8 @@ class OnlineJudgeSite(models.Model):
             from bs4 import BeautifulSoup
             soup = BeautifulSoup(body, 'lxml')
             result = soup.select(self.problem_content_css_selector)
-            print(self.problem_content_css_selector)
-            print(result)
+            # print(self.problem_content_css_selector)
+            # print(result)
             if result:
                 body = result[0]
 
@@ -245,16 +245,41 @@ class ProblemPost(UserOwnedModel):
         default='',
     )
 
-    problems = models.ManyToManyField(
-        verbose_name='相关题目',
+    problem = models.ForeignKey(
+        verbose_name='对应题目',
         to='OnlineJudgeProblem',
         related_name='posts',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
+
+    problems_related = models.ManyToManyField(
+        verbose_name='关联题目',
+        to='OnlineJudgeProblem',
+        related_name='posts_related'
+    )
+
+    origin_link = models.CharField(
+        verbose_name='原文链接',
+        help_text='留空的话视作原创',
+        max_length=250,
+        blank=True,
+        null=True,
+        unique=True,  # 为了排除多余的文章导入，有必要通过原文链接排重
     )
 
     categories = models.ManyToManyField(
         verbose_name='标记分类',
         to='ProblemCategory',
         related_name='posts',
+    )
+
+    # TODO: 如果一个用户对题目的评级在统计意义上与平均值相比，明显偏高或者偏低，这个指标可以用来指示用户对自己水平的主观评价
+    rating_difficulty = models.IntegerField(
+        verbose_name='难度评级',
+        default=0,
+        help_text='1-5，最难为5，最容易为1，0的话是尚未评分'
     )
 
     date_created = models.DateTimeField(
@@ -271,6 +296,12 @@ class ProblemPost(UserOwnedModel):
         verbose_name = '题解'
         verbose_name_plural = '题解'
         db_table = 'core_problem_post'
+
+    def save(self, *args, **kwargs):
+        # 必须显式原创声明或者指定原文链接
+        if self.origin_link == '':
+            raise AppErrors.ERROR_POST_REQUIRE_ORIGIN_LINK
+        super().save(*args, **kwargs)
 
 
 class UserLog(UserOwnedModel):

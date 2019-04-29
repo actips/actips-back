@@ -38,8 +38,14 @@ class ProblemCategorySerializer(serializers.ModelSerializer):
 class ProblemPostSerializer(serializers.ModelSerializer):
     author = serializers.PrimaryKeyRelatedField(
         read_only=True)
-    problems_item = OnlineJudgeProblemSerializer(
-        source='problems', many=True, read_only=True)
+    problem_title = serializers.ReadOnlyField(
+        source='problem.title')
+    problem_site_code = serializers.ReadOnlyField(
+        source='problem.site.code')
+    problem_url = serializers.ReadOnlyField(
+        source='problem.online_judge_url')
+    problems_related_item = OnlineJudgeProblemSerializer(
+        source='problems_related', many=True, read_only=True)
     categories_item = ProblemCategorySerializer(
         source='categories', many=True, read_only=True)
     author_avatar_url = serializers.ReadOnlyField(
@@ -58,4 +64,3 @@ class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
         fields = '__all__'
-

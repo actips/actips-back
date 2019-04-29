@@ -78,7 +78,7 @@ class OnlineJudgeSiteViewSet(mixins.ListModelMixin,
     @action(methods=['POST'], detail=True)
     def ping_problem(self, request, pk):
         site = self.get_object()
-        # TODO: 调试方便，总是强制重新抓取
+        # TODO: 调试方便，总是强制重新抓取，性能会有问题，后面优化掉
         problem = site.ping_problem(request.data.get('num'), force_reload=True)
         if not problem:
             return u.response_fail('没有找到题目')
@@ -104,16 +104,13 @@ class ProblemPostViewSet(mixins.CreateModelMixin,
     serializer_class = s.ProblemPostSerializer
     filter_fields = '__all__'
     ordering = ['-pk']
-    search_fields = ['title', 'problems__title']
+    search_fields = ['title', 'problem__title']
     allowed_deep_params = [
         'categories__id',
         'problems__site__id',
     ]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
-    def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
