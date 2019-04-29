@@ -52,7 +52,7 @@ class MemberViewSet(viewsets.GenericViewSet):
     def current(self, request):
         # 尚未登录
         if request.user.is_anonymous:
-            raise AppErrors.ERROR_NOT_SIGN_IN
+            raise AppErrors.ERROR_NOT_SIGN_IN.set_silent(True)
         member = self.get_queryset().filter(user=request.user).first()
         if not member:
             raise AppErrors.ERROR_MEMBER_INEXISTS
@@ -107,7 +107,7 @@ class ProblemPostViewSet(mixins.CreateModelMixin,
     search_fields = ['title', 'problem__title']
     allowed_deep_params = [
         'categories__id',
-        'problems__site__id',
+        'problem__site__id',
     ]
 
     def perform_create(self, serializer):

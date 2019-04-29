@@ -96,6 +96,12 @@ class OnlineJudgeSite(models.Model):
         max_length=20,
     )
 
+    charset = models.CharField(
+        verbose_name='网站编码',
+        max_length=20,
+        default='utf8',
+    )
+
     homepage = models.CharField(
         verbose_name='首页',
         max_length=255,
@@ -146,7 +152,7 @@ class OnlineJudgeSite(models.Model):
         from urllib.request import urlopen
         url = self.problem_url_template.format(num=num)
         resp = urlopen(url)
-        body = resp.read().decode()
+        body = resp.read().decode(self.charset)
         # 判断返回的网页是否一个合法的题目
         pattern = re.compile(self.problem_fail_regex, re.MULTILINE)
         if self.problem_fail_regex and pattern.search(body):
