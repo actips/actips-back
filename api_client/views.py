@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.db import models
 from rest_framework import viewsets, mixins
@@ -5,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 import core.models as m
+from api_client.decorators import member_required
 from core.exceptions import AppErrors
 from django_base.base_media.models import Image
 from django_base.base_utils import utils as u
@@ -52,7 +55,7 @@ class MemberViewSet(viewsets.GenericViewSet):
     def current(self, request):
         # 尚未登录
         if request.user.is_anonymous:
-            raise AppErrors.ERROR_NOT_SIGN_IN.set_silent(True)
+            raise AppErrors.ERROR_LOGIN_REQUIRED.set_silent(True)
         member = self.get_queryset().filter(user=request.user).first()
         if not member:
             raise AppErrors.ERROR_MEMBER_INEXISTS
@@ -62,8 +65,8 @@ class MemberViewSet(viewsets.GenericViewSet):
     def get_last_login_list(self, request):
         count = int(request.query_params.get('count') or 10)
         members = m.Member.objects.annotate(
-                last_login_time=models.Max('user__userlogs_owned__date_created'))\
-            .order_by('-last_login_time')[:count]
+            last_login_time=models.Max('user__userlogs_owned__date_created')) \
+                      .order_by('-last_login_time')[:count]
         return Response(data=s.MemberSerializer(members, many=True).data)
 
 
@@ -129,7 +132,7 @@ class ProblemPostViewSet(mixins.CreateModelMixin,
 class ProblemCategoryViewSet(mixins.ListModelMixin,
                              mixins.RetrieveModelMixin,
                              viewsets.GenericViewSet):
-    queryset = m.ProblemCategory.objects.all()\
+    queryset = m.ProblemCategory.objects.all() \
         .annotate(post_count=models.Count('posts'))
     serializer_class = s.ProblemCategorySerializer
     filter_fields = '__all__'
@@ -143,3 +146,26 @@ class ImageViewSet(mixins.CreateModelMixin,
     serializer_class = s.ImageSerializer
     filter_fields = '__all__'
     ordering = ['-pk']
+
+
+class CommentViewSet(mixins.ListModelMixin,
+                     viewsets.GenericViewSet):
+    queryset = m.Comment.objects.all()
+    serializer_class = s.CommentSerializer
+    filter_fields = '__all__'
+    ordering = ['pk']
+
+    @member_required
+    @action(methods=['POST'], detail=True)
+    def reply(self, request, pk):
+        parent = self.get_object()
+        content = request.data.get('content').strip()
+        if len(content) < 10:
+            raise AppErrors.ERROR_COMMENT_CONTENT_TOO_SHORT
+        comment = m.Comment.objects.create(
+            author=request.user,
+            parent=parent,
+            target=parent.target,
+            content=content,
+        )
+        return Response(data=s.CommentSerializer(comment).data)

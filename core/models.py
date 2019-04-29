@@ -2,10 +2,12 @@ import json
 import re
 
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db import models
 
 from core.exceptions import AppErrors
-from django_base.base_member.models import AbstractMember, AbstractOAuthEntry, HierarchicalModel, UserOwnedModel
+from django_base.base_member.models import AbstractMember, AbstractOAuthEntry, HierarchicalModel, UserOwnedModel, \
+    ContentType
 
 
 class Member(AbstractMember):
@@ -160,6 +162,7 @@ class OnlineJudgeSite(models.Model):
         # 抓取标题
         pattern = re.compile(self.problem_title_regex, re.MULTILINE)
         result = pattern.findall(body)
+        print(body)
         if not result:
             raise AppErrors.ERROR_FETCH_PROBLEM_TITLE_NOT_MATCH
         title = result[0]
@@ -260,6 +263,7 @@ class ProblemPost(UserOwnedModel):
 
     problems_related = models.ManyToManyField(
         verbose_name='关联题目',
+        blank=True,
         to='OnlineJudgeProblem',
         related_name='posts_related'
     )
@@ -284,6 +288,12 @@ class ProblemPost(UserOwnedModel):
         verbose_name='难度评级',
         default=0,
         help_text='1-5，最难为5，最容易为1，0的话是尚未评分'
+    )
+
+    comments = GenericRelation(
+        verbose_name='评论',
+        to='Comment',
+        related_name='problem_posts',
     )
 
     date_created = models.DateTimeField(
@@ -330,3 +340,29 @@ class UserLog(UserOwnedModel):
         verbose_name = '用户日志'
         verbose_name_plural = '用户日志'
         db_table = 'core_user_log'
+
+
+class Comment(UserOwnedModel,
+              HierarchicalModel):
+    content = models.TextField(
+        verbose_name='评论内容',
+    )
+
+    content_type = models.ForeignKey(
+        verbose_name='关联类型',
+        to='contenttypes.ContentType',
+        related_name='comments',
+        on_delete=models.CASCADE,
+    )
+    object_id = models.PositiveIntegerField()
+    target = GenericForeignKey()
+
+    date_created = models.DateTimeField(
+        verbose_name='评论时间',
+        auto_now_add=True,
+    )
+
+    class Meta:
+        verbose_name = '用户评论'
+        verbose_name_plural = '用户评论'
+        db_table = 'core_comment'
