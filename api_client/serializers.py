@@ -69,6 +69,11 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author_nickname = serializers.ReadOnlyField(
+        source='author.member.nickname')
+    parent_nickname = serializers.ReadOnlyField(
+        source='parent.author.member.nickname')
+
     class Meta:
         model = m.Comment
         fields = '__all__'

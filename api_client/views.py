@@ -148,14 +148,41 @@ class ImageViewSet(mixins.CreateModelMixin,
     ordering = ['-pk']
 
 
-class CommentViewSet(mixins.ListModelMixin,
+class CommentViewSet(mixins.CreateModelMixin,
+                     mixins.ListModelMixin,
                      viewsets.GenericViewSet):
     queryset = m.Comment.objects.all()
     serializer_class = s.CommentSerializer
     filter_fields = '__all__'
     ordering = ['pk']
+    allowed_deep_params = ['content_type__model']
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
     @member_required
+    @action(methods=['POST'], detail=True)
+    def reply(self, request, pk):
+        parent = self.get_object()
+        content = request.data.get('content').strip()
+        if len(content) < 10:
+            raise AppErrors.ERROR_COMMENT_CONTENT_TOO_SHORT
+        comment = m.Comment.objects.create(
+            author=request.user,
+            parent=parent,
+            target=parent.target,
+            content=content,
+        )
+        return Response(data=s.CommentSerializer(comment).data)
+
+    @member_required
+    def create(self, request, *args, **kwargs):
+        if type(request.data.get('content_type')) == str:
+            app_label, model_name = request.data.get('content_type').split('.')
+            request.data['content_type'] = \
+                m.ContentType.objects.get(app_label=app_label, model=model_name).id
+        return super().create(request, *args, **kwargs)
+
     @action(methods=['POST'], detail=True)
     def reply(self, request, pk):
         parent = self.get_object()
