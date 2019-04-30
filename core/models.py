@@ -232,6 +232,13 @@ class ProblemCategory(HierarchicalModel):
         unique=True,
     )
 
+    seq = models.CharField(
+        verbose_name='序号',
+        max_length=20,
+        blank=True,
+        default=True,
+    )
+
     class Meta:
         verbose_name = '问题分类'
         verbose_name_plural = '问题分类'
@@ -239,6 +246,17 @@ class ProblemCategory(HierarchicalModel):
 
     def __str__(self):
         return self.name
+
+    def calculate(self):
+        """ 计算所有计算列
+        :return:
+        """
+        # 计算排序编号
+        self.seq = '{:04d}'.format(self.id)
+        if self.parent:
+            self.parent.calculate()
+            self.seq = self.parent.seq + self.seq
+        self.save()
 
 
 class ProblemPost(UserOwnedModel):
