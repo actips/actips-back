@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 import core.models as m
-from api_client.decorators import member_required
+from api_client.decorators import member_required, author_required
 from core.exceptions import AppErrors
 from django_base.base_media.models import Image
 from django_base.base_utils import utils as u
@@ -150,6 +150,7 @@ class ImageViewSet(mixins.CreateModelMixin,
 
 class CommentViewSet(mixins.CreateModelMixin,
                      mixins.ListModelMixin,
+                     mixins.DestroyModelMixin,
                      viewsets.GenericViewSet):
     queryset = m.Comment.objects.all()
     serializer_class = s.CommentSerializer
@@ -182,6 +183,10 @@ class CommentViewSet(mixins.CreateModelMixin,
             request.data['content_type'] = \
                 m.ContentType.objects.get(app_label=app_label, model=model_name).id
         return super().create(request, *args, **kwargs)
+
+    @author_required
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
     @action(methods=['POST'], detail=True)
     def reply(self, request, pk):
