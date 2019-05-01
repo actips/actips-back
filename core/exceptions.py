@@ -23,6 +23,8 @@ class AppErrors:
     ERROR_POST_REQUIRE_ORIGIN_LINK = AppError(30004, '请显式声明原创或者注明原文链接')
     ERROR_COMMENT_CONTENT_TOO_SHORT = AppError(30005, '评论内容至少10个字符。')
 
+    ERROR_NOT_IMPLEMENTED = AppError(90001, '方法未实现')
+
 
 def exception_handler(exc, context):
     """
