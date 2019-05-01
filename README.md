@@ -1,4 +1,4 @@
-# actips-front
+# actips-back
 
 这是 ACTips.org 社区平台的后端项目代码，采用 Python + Django + Django Rest Framework 开发。
 
@@ -8,32 +8,4 @@
 
 感谢 Star，欢迎 Fork。
 
----
 
-## Project setup
-```
-yarn install
-```
-
-### Compiles and hot-reloads for development
-```
-yarn run serve
-```
-
-### Compiles and minifies for production
-```
-yarn run build
-```
-
-### Run your tests
-```
-yarn run test
-```
-
-### Lints and fixes files
-```
-yarn run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
