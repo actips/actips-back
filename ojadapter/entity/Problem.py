@@ -11,9 +11,14 @@ class Problem(object):
         self.memory_limit = 0
         self.is_special_judge = False
         self.description = ''
+        self.extra_description = ''
         self.input_specification = ''
         self.output_specification = ''
         self.input_samples = []
         self.output_samples = []
         self.author = ''
         self.source = ''
+
+    def print(self):
+        [print('>>>>', k, '>>>>\n' + str(v), '\n<<<<\n') for k, v in self.__dict__.items()]
+

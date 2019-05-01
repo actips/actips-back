@@ -1,5 +1,5 @@
 from django.test import TestCase, SimpleTestCase
-from . import adapter
+from .. import adapter
 
 
 class TestCaseAdapters(SimpleTestCase):

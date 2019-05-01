@@ -1,4 +1,14 @@
 class OJAdapterBase(object):
+    """ OJ适配器类
+
+    每个OJ各自实现一个子类以实现功能对接
+
+    !!! 重要的事情说三遍 !!!
+
+    一定要完整编写单元测试！
+    一定要完整编写单元测试！
+    一定要完整编写单元测试！
+    """
     # 匹配 OnlineJudgeSite 的 code
     code = None
     charset = 'utf8'
@@ -34,31 +44,7 @@ class OJAdapterBase(object):
         """
         raise NotImplementedError
 
-    # def get_title_from_body(self, content):
-    #     """ 编写规则从页面内容中解析出题目标题 """
-    #     raise NotImplementedError
-    #
-    # def get_content_from_body(self, content):
-    #     """ 编写规则从页面内容中解析出题目内容 """
-    #     raise NotImplementedError
-
-    # def get_input_sample_from_content(self, content):
-    #     """ 编写规则从页面内容中解析出样例输入 """
-    #     raise NotImplementedError
-    #
-    # def get_output_sample_from_content(self, content):
-    #     """ 编写规则从页面内容中解析出样例输入 """
-    #     raise NotImplementedError
-
-    # def get_input_sample_from_content(self, content):
-    #     """ 编写规则从页面内容中解析出样例输入 """
-    #     raise NotImplementedError
-    #
-    # def get_output_sample_from_content(self, content):
-    #     """ 编写规则从页面内容中解析出样例输入 """
-    #     raise NotImplementedError
-
-    def download_problem(self, num):
+    def download_problem(self, problem_id, contest_id=None):
         """ 获取并返回一个问题对象 """
         raise NotImplementedError
 
