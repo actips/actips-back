@@ -6,6 +6,8 @@ from django_base.base_media.models import Image
 
 class MemberSerializer(serializers.ModelSerializer):
     avatar_url = serializers.ReadOnlyField(source='oauth_entries.first.headimgurl')
+    username = serializers.ReadOnlyField(source='user.username')
+    email = serializers.ReadOnlyField(source='user.email')
 
     class Meta:
         model = m.Member

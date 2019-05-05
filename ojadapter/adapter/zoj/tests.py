@@ -143,7 +143,8 @@ class TestAdapterZOJ(TestCase):
         self.assertEqual(context.session.cookies['oj_password'], '"{}"'.format(self.adapter.platform_password))
 
     def test_09_oj_get_submission_list(self):
-        # context = self.adapter.get_platform_user_context()
-        # submissions = self.adapter.get_user_submission_list(context)
-        context = self.adapter.get_user_context_by_user_and_password('fish_ball', '111111')
+        context = self.adapter.get_platform_user_context()
         submissions = self.adapter.get_user_submission_list(context)
+        # context = self.adapter.get_user_context_by_user_and_password('fish_ball', '111111')
+        # submissions = self.adapter.get_user_submission_list(context)
+

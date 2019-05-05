@@ -69,6 +69,31 @@ class MemberViewSet(viewsets.GenericViewSet):
                       .order_by('-last_login_time')[:count]
         return Response(data=s.MemberSerializer(members, many=True).data)
 
+    @action(methods=['POST'], detail=False)
+    @member_required
+    def update_profile(self, request):
+        user = request.user
+        user.username = request.data.get('username')
+        user.save()
+
+        member = user.member
+        member.nickname = request.data.get('nickname') or ''
+        member.gender = request.data.get('gender') or ''
+        member.birthday = request.data.get('birthday') or None
+        member.save()
+        return u.response_success('操作成功')
+
+    @action(methods=['POST'], detail=False)
+    @member_required
+    def update_password(self, request):
+        user = request.user
+        password = request.data.get('password')
+        if len(password) < 6:
+            raise AppErrors.ERROR_PASSWORD_TOO_SIMPLE
+        user.set_password(password)
+        user.save()
+        return u.response_success('密码修改成功')
+
 
 class OnlineJudgeSiteViewSet(mixins.ListModelMixin,
                              mixins.RetrieveModelMixin,

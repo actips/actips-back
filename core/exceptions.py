@@ -16,6 +16,7 @@ class AppErrors:
     ERROR_UPDATE_NOT_PERMITTED = AppError(20006, '无权修改')
     ERROR_SUPERUSER_REQUIRED = AppError(20007, '需要管理员权限')
     ERROR_AUTHOR_REQUIRED = AppError(20008, '需要作者权限')
+    ERROR_PASSWORD_TOO_SIMPLE = AppError(20009, '密码过于简单')
 
     ERROR_FETCH_PROBLEM_STATUS_ERROR = AppError(30001, '抓取题目错误：题目链接返回非正常状态码')
     ERROR_FETCH_PROBLEM_FAIL_REGEX_MATCHED = AppError(30002, '抓取题目错误：目标页面匹配了题目为空的正则表达式')
