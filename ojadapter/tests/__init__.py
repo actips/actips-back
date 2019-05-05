@@ -1,1 +1,1 @@
-from .TestAdapterZOJ import *
+from ..adapter.zoj.tests import *

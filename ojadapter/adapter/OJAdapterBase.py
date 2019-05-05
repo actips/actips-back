@@ -1,3 +1,6 @@
+from ojadapter.entity.UserContext import UserContext
+
+
 class OJAdapterBase(object):
     """ OJ适配器类
 
@@ -13,6 +16,10 @@ class OJAdapterBase(object):
     code = None
     charset = 'utf8'
     homepage = None
+
+    # 平台登录OJ用的账户密码，下面这个是默认注册形式
+    platform_username = 'actips'
+    platform_password = 'Actips@2019'
 
     # OJ整站配置获取部分
     def get_supported_languages(self):
@@ -44,39 +51,55 @@ class OJAdapterBase(object):
         """
         raise NotImplementedError
 
-    def download_problem(self, problem_id, contest_id=None):
-        """ 获取并返回一个问题对象 """
+    def get_platform_user_context(self):
+        """ 获取平台官方代理用户的会话 """
+        return self.get_user_context_by_user_and_password(
+            self.platform_username,
+            self.platform_password,
+        )
+
+    def get_user_context_by_http_client(self, cookies, headers):
+        """ 根据用户的 Cookie 和 Header 获取用户会话 """
+        context = UserContext()
+        from requests.cookies import cookiejar_from_dict
+        context.session.cookies = cookiejar_from_dict(cookies)
+        context.session.headers = headers
+        # context.save()
+        return context
+
+    def get_user_context_by_user_and_password(self, cookies, headers):
+        """ 根据用户的 Cookie 和 Header 获取用户会话 """
         raise NotImplementedError
 
-    # def get_problem_supported_languages(self, problem):
-    #     """ 获取某道题目支持的编程语言 """
-    #     raise NotImplementedError
-
     # 用户档案部分
-    def get_user_solved_problem_list(self):
+    def get_user_solved_problem_list(self, context):
         """ 获取用户已通过题目列表 """
         raise NotImplementedError
 
-    def get_user_failed_problem_list(self):
+    def get_user_failed_problem_list(self, context):
         """ 获取用户未通过题目列表 """
         raise NotImplementedError
 
-    def get_user_submission_list(self):
+    def get_user_submission_list(self, context):
         """ 获取用户的提交列表 """
         raise NotImplementedError
 
-    # 题目提交部分
-    def get_platform_user_context(self):
-        """ 获取平台官方代理用户的会话 """
+    def check_context_validity(self, context):
+        """ 检测用户会话是否依然有效
+        :param context: UserContext 对象
+        :return:
+        """
         raise NotImplementedError
 
-    def get_user_context_by_http_client(self, cookie, headers):
-        """ 根据用户的 Cookie 和 Header 获取用户会话 """
-        raise NotImplementedError
+    def download_problem(self, problem_id, contest_id=None):
+        """ 获取并返回一个问题对象 """
+        from ..utils import request_text
+        html = request_text(self.get_problem_url(problem_id, contest_id))
+        problem = self.parse_problem(html)
+        problem.id = problem_id
+        problem.contest_id = contest_id
+        return problem
 
-    def get_user_context_by_user_and_password(self, cookie, headers):
-        """ 根据用户的 Cookie 和 Header 获取用户会话 """
-        raise NotImplementedError
-
-    def run_tests(self):
-        """ 运行所有测试（实现类的所有 test 前缀都会被运行） """
+    def get_problem_supported_languages(self, problem):
+        """ 获取某道题目支持的编程语言 """
+        return self.get_supported_languages()

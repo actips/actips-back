@@ -111,3 +111,4 @@ venv.bak/
 /actips/settings.py
 /media
 /static
+/ojadapter/.session/*

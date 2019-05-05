@@ -1,7 +1,7 @@
 # from django.test import TestCase, SimpleTestCase
 from unittest import TestCase
 
-from ..adapter import OJAdapterZOJ, request_text, request_dom
+from .adapter import *
 
 
 class TestAdapterZOJ(TestCase):
@@ -120,4 +120,30 @@ class TestAdapterZOJ(TestCase):
         assert problem.id == 4022
         assert problem.contest_id is None
 
-    # def test_06_get_content_from_body(self):
+    def test_06_get_user_solved_problem_list(self):
+        context = self.adapter.get_platform_user_context()
+        solved_problems_ids = self.adapter.get_user_solved_problem_list(context)
+        print(solved_problems_ids)
+        # 官方平台号交了这两道题，当做单元测试的 stub
+        self.assertIn('1001', solved_problems_ids)
+        self.assertIn('1654', solved_problems_ids)
+
+    def test_07_get_user_context_by_http_client(self):
+        context = self.adapter.get_platform_user_context()
+        cookies = dict(context.session.cookies)
+        headers = dict(context.session.headers)
+        context = self.adapter.get_user_context_by_http_client(cookies, headers)
+        solved_problems_ids = self.adapter.get_user_solved_problem_list(context)
+        print(solved_problems_ids)
+        self.assertTrue(self.adapter.check_context_validity(context))
+
+    def test_08_oj_login_session(self):
+        context = self.adapter.get_platform_user_context()
+        self.assertEqual(context.session.cookies['oj_handle'], self.adapter.platform_username)
+        self.assertEqual(context.session.cookies['oj_password'], '"{}"'.format(self.adapter.platform_password))
+
+    def test_09_oj_get_submission_list(self):
+        # context = self.adapter.get_platform_user_context()
+        # submissions = self.adapter.get_user_submission_list(context)
+        context = self.adapter.get_user_context_by_user_and_password('fish_ball', '111111')
+        submissions = self.adapter.get_user_submission_list(context)

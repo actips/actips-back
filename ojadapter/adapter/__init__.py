@@ -11,4 +11,4 @@ import os.path
 
 # from .OJAdapterCodeForces import *
 # from .OJAdapterHihoCoder import *
-from .OJAdapterZOJ import *
+from .zoj.adapter import *

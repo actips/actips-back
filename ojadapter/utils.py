@@ -2,7 +2,6 @@ import json
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
-import chardet
 
 
 def request_text(url, charset='utf8'):
