@@ -151,3 +151,26 @@ class TestAdapterZOJ(TestCase):
             print(sub.__dict__)
         # context = self.adapter.get_user_context_by_user_and_password('fish_ball', '111111')
         # submissions = self.adapter.get_user_submission_list(context)
+
+    def test_10_oj_submit_problem(self):
+        context = self.adapter.get_platform_user_context()
+        from ojadapter.entity.Submission import Submission
+        code = """
+#include <iostream>
+using namespace std;
+int main() {
+  int a, b;
+  while(cin >> a >> b) {
+    cout << a + b << endl;
+  }
+  return 0;
+}"""
+        submission = self.adapter.submit_problem(context, 1010, Submission.LANGUAGE_GPP, code)
+        print(submission.__dict__)
+        self.assertEqual(submission.result, Submission.RESULT_WRONG_ANSWER)
+        from time import sleep
+        print('wait for 10 seconds, to avoid "too fast" result')
+        sleep(10)  # Or you will get a "Submit too fast" result
+        submission = self.adapter.submit_problem(context, 1001, Submission.LANGUAGE_GPP, code)
+        print(submission.__dict__)
+        self.assertEqual(submission.result, Submission.RESULT_ACCEPTED)
