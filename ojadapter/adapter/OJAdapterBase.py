@@ -103,3 +103,14 @@ class OJAdapterBase(object):
     def get_problem_supported_languages(self, problem):
         """ 获取某道题目支持的编程语言 """
         return self.get_supported_languages()
+
+    def submit_problem(self, context, problem_id, language, code, contest_id=None):
+        """ 提交一个题目
+        :param context: 当前的会话
+        :param problem_id: 题目编号
+        :param language: 提交的编程语言，采用内部的 Submission.LANGUAGE_CHOICES 取值
+        :param code: 代码内容
+        :param contest_id: 提交的比赛ID（如果有）
+        :return:
+        """
+        raise NotImplementedError

@@ -79,7 +79,7 @@ class OJAdapterZOJ(OJAdapterBase):
         problem.is_special_judge = 'Special Judge' in row_limit
         # 解析正文内容
         content = dom.select('#content_body')[0].encode_contents().decode(self.charset)
-        print(content)
+        # print(content)
         parser = re.compile(
             r'<hr/>(?:.|\n)+<hr/>((?:.|\n)+)'  # ?P<description>
             r'(?:(?:<p><b>|<h4>)Input(?:</h4>|</b>[\s\n]*</p>))((?:.|\n)+)'  # ?P<input_specification>
@@ -207,15 +207,13 @@ class OJAdapterZOJ(OJAdapterBase):
                     run_time=int(row.select_one('.runTime').text or -1),
                     run_memory=int(row.select_one('.runMemory').text or -1),
                 )
-                if not submission.result:
-                    print(row.select_one('.runJudgeStatus'))
                 # print(row)
                 code = context.session \
                            .get(urljoin(self.homepage, row.select_one('.runLanguage a').attrs.get('href'))) \
                            .content.decode(self.charset)
                 submission.code = code
                 results.append(submission)
-                print(submission.__dict__)
+                # print(submission.__dict__)
             # next page link
             groups = re.findall(r'JavaScript: goNext\((\d+)\);', content)
             if groups:
