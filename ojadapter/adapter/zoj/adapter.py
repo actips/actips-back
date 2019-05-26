@@ -1,3 +1,4 @@
+import json
 import re
 
 import requests
@@ -69,41 +70,151 @@ class OJAdapterZOJ(OJAdapterBase):
             return urljoin(self.homepage, '/onlinejudge/showProblem.do?problemCode={}'.format(problem_id))
 
     def parse_problem(self, body):
+        # 构造空白问题对象
         problem = Problem()
+        problem.input_samples = ''
+        problem.output_samples = ''
+        problem.extra_info = dict()
+        # 开始处理
         dom = BeautifulSoup(body, 'lxml')
+        # 抓取的题目编号
+        pid = int(dom.select_one('#content_title').text.split(' - ')[1])
         # 解析标题
-        problem.title = dom.select('.bigProblemTitle')[0].text
+        problem.title = dom.select('.bigProblemTitle')[0].text.strip()
         # 解析时间限制、Special Judge
         row_limit = dom.select('#content_body > center')[1].text
-        problem.time_limit = int(re.findall(r'Time Limit:\s+(\d+)\s+Seconds?', row_limit)[0])
+        problem.time_limit = int(re.findall(r'Time Limit:\s+(\d+)\s+Seconds?', row_limit)[0]) * 1000  # 转化为毫秒
         problem.memory_limit = int(re.findall(r'Memory Limit:\s+(\d+)\s+KB', row_limit)[0])
         problem.is_special_judge = 'Special Judge' in row_limit
         # 解析正文内容
-        content = dom.select('#content_body')[0].encode_contents().decode(self.charset)
+        # content = dom.select('#content_body')[0].encode_contents().decode(self.charset)
         # print(content)
-        parser = re.compile(
-            r'<hr/>(?:.|\n)+<hr/>((?:.|\n)+)'  # ?P<description>
-            r'(?:(?:<p><b>|<h4>)Input(?:</h4>|</b>[\s\n]*</p>))((?:.|\n)+)'  # ?P<input_specification>
-            r'(?:(?:<p><b>|<h4>)Output(?:</h4>|</b>[\s\n]*</p>))((?:.|\n)+)'  # ?P<output_specification>
-            r'(?:<h4>Sample Input</h4>[\s\n]*<pre>((?:.|\n)+)</pre>[\s\n]*)'  # ?P<input_sample>
-            r'(?:<h4>Sample Output</h4>[\s\n]*<pre>((?:.|\n)+)</pre>[\s\n]*)'  # ?P<input_sample>
-            r'((?:.|\n)*)?<hr/>[\s\n]*'  # ?P<extra_description>
-            r'(?:Author:\s+<strong>(.+)</strong><br/>[\s\n]+)?'  # ?P<author>
-            r'(?:Source:\s+<strong>(.+)</strong><br/>[\s\n]+)?'  # ?P<source>
-            r'<center>'
-            , re.MULTILINE
-        )
-        match = parser.search(content)
-        (description, input_specification, output_specification,
-         input_samples, output_samples, extra_description, author, source) = match.groups()
-        problem.description = html2text(description or '').strip()
-        problem.extra_description = html2text(extra_description or '').strip()
-        problem.input_specification = html2text(input_specification or '').strip()
-        problem.output_specification = html2text(output_specification or '').strip()
-        problem.input_samples = [input_samples.strip().replace('\r\n', '\n').replace('\r', '\n')]
-        problem.output_samples = [output_samples.strip().replace('\r\n', '\n').replace('\r', '\n')]
-        problem.author = (author or '').strip()
-        problem.source = (source or '').strip()
+        parser = re.compile(r'<div id="content_body">((?:.|\n)+)'
+                            r'<center>[\s\n]+<a href="/onlinejudge/(?:contestSubmit|submit).do', re.MULTILINE)
+        match = parser.search(body)
+        content = match[1]
+
+        # 补刀，有些很特别的恶心情况，例如 2813，它的数据是放在一个表格里面的，这种情况要特殊处理：
+        soup = BeautifulSoup(content, 'lxml')
+        # print(contentSoup)
+        for table in soup.select('table'):
+            thead_tds = table.select('thead td')
+            if len(thead_tds) == 2 and thead_tds[0].text == 'Example input:' and \
+                    table.select('thead td')[1].text == 'Example output:':
+                problem.input_samples = \
+                    '\n'.join([l.strip() for l in table.select('tbody td')[0].text.split('\n')]).strip()
+                problem.output_samples = \
+                    '\n'.join([l.strip() for l in table.select('tbody td')[1].text.split('\n')]).strip()
+                pattern = re.compile(r'<table(?:.|\n)*<thead(?:.|\n)*Example input(?:.|\n)*</table>', re.MULTILINE)
+                content = pattern.sub('', content)
+
+        # parser = re.compile(
+        #     r'<hr/>(?:.|\n)+<hr/>((?:.|\n)+)'  # ?P<description>
+        #     r'(?:(?:<p><b>|<h4>)Input(?:</h4>|</b>[\s\n]*</p>))((?:.|\n)+)'  # ?P<input_specification>
+        #     r'(?:(?:<p><b>|<h4>)Output(?:</h4>|</b>[\s\n]*</p>))((?:.|\n)+)'  # ?P<output_specification>
+        #     r'(?:<h4>Sample Input</h4>[\s\n]*<pre>((?:.|\n)+)</pre>[\s\n]*)'  # ?P<input_sample>
+        #     r'(?:<h4>Sample Output</h4>[\s\n]*<pre>((?:.|\n)+)</pre>[\s\n]*)'  # ?P<input_sample>
+        #     r'((?:.|\n)*)?<hr/>[\s\n]*'  # ?P<extra_description>
+        #     r'(?:Author:\s+<strong>(.+)</strong><br/>[\s\n]+)?'  # ?P<author>
+        #     r'(?:Source:\s+<strong>(.+)</strong><br/>[\s\n]+)?'  # ?P<source>
+        #     r'(?:Contest:\s+<strong>(.+)</strong><br/>[\s\n]+)?'  # ?P<contest>
+        #     r'(?:.|\n)*<center>'
+        #     , re.MULTILINE
+        # )
+        # match = parser.search(content)
+        # if match:
+        #     (description, input_specification, output_specification, input_samples, output_samples,
+        #      extra_description, author, source, contest) = match.groups()
+        #     problem.description = html2text(description or '').strip()
+        #     problem.extra_description = html2text(extra_description or '').strip()
+        #     problem.input_specification = html2text(input_specification or '').strip()
+        #     problem.output_specification = html2text(output_specification or '').strip()
+        #     problem.input_samples = [input_samples.strip().replace('\r\n', '\n').replace('\r', '\n')]
+        #     problem.output_samples = [output_samples.strip().replace('\r\n', '\n').replace('\r', '\n')]
+        #     problem.extra_info = json.dumps(dict(
+        #         author=(author or '').strip(),
+        #         source=(source or '').strip(),
+        #         contest=(contest or '').strip()
+        #     ))
+        #     return problem
+        _content = html2text(content.replace('\r\n', '\n'), bodywidth=0)
+        # print(_content)
+        parts = [x.strip() for x in _content.split('* * *')]
+
+        stage = 0
+
+        # 特殊格式补刀，例如 1067-1075
+        example_flag = False
+
+        for line in parts[2].split('\n'):
+
+            # 特殊格式补刀，例如 1067-1075
+            if re.match('^[^\w]*(?:ex|s)ample[^\w]*$', line.lower()):
+                example_flag = True
+                continue
+
+            # 分块
+            if re.match('^[^\w]*input(?: format)?[^\w]*$', line.lower()):
+                stage = 3 if example_flag else 1  # 主要为了照顾 1067-1075 这种格式
+                continue
+            elif re.match('^[^\w]*output(?: format)?[^\w]*$', line.lower()):
+                stage = 4 if example_flag else 2  # 主要为了照顾 1067-1075 这种格式
+                continue
+            elif re.match('^[^\w]*(?:ex|s)ample\s*input[^\w]*$', line.lower()):
+                stage = 3
+                continue
+            elif re.match('^[^\w]*(?:ex|s)ample\s*output[^\w]*$', line.lower()) \
+                    or re.match('^[^\w]*output for (?:the )?sample input[^\w]*$', line.lower()):
+                stage = 4
+                continue
+
+            # 特殊格式补刀，例如2813
+            if line.startswith('**Input:**'):
+                stage = 1
+                line = line.replace('**Input:**', '')
+            if line.startswith('**Output:**'):
+                stage = 2
+                line = line.replace('**Output:**', '')
+
+            # 1134-1141 特殊处理（input/output实际上是数据，没有specifications）
+            if 1134 <= pid <= 1141:
+                stage = 4 if stage == 2 else 3 if stage == 1 else stage
+
+            # extra_description after sample data
+            if 3 <= stage <= 4 and line.strip() \
+                    and line.startswith('#') or re.match(r'^\*.+\*$', line):
+                stage = 5
+
+            # 导入
+            if stage == 0:
+                problem.description += line + '\n'
+            elif stage == 1:
+                problem.input_specification += line + '\n'
+            elif stage == 2:
+                problem.output_specification += line + '\n'
+            elif stage == 3:
+                problem.input_samples += (line[4:] if line.startswith('    ') else line) + '\n'
+            elif stage == 4:
+                problem.output_samples += (line[4:] if line.startswith('    ') else line) + '\n'
+            else:
+                problem.extra_description += line + '\n'
+
+        for line in parts[3].split('\n'):
+            if ':' in line:
+                pos = line.find(':')
+                key = line[:pos].strip().lower()
+                val = line[pos + 1:].strip('* ')
+                problem.extra_info[key] = val
+
+        problem.description = problem.description.strip()
+        problem.input_specification = problem.input_specification.strip()
+        problem.output_specification = problem.output_specification.strip()
+        problem.input_samples = [problem.input_samples.strip()]
+        problem.output_samples = [problem.output_samples.strip()]
+        problem.extra_description = problem.extra_description.strip()
+        problem.extra_info = json.dumps(problem.extra_info)
+
+        problem.print()
         return problem
 
     def get_user_context_by_user_and_password(self, username, password):

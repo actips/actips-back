@@ -1,14 +1,17 @@
-from importlib import import_module
-import os
 import os.path
+import inspect
 
-# for file in os.listdir(os.path.dirname(__file__)):
-#     print(file)
-#     if not file.startswith('OJAdapter') or not file.endswith('.py'):
-#         continue
-#     class_name = file.split('.')[0]
-#     import_module()
+from importlib import import_module
+from .OJAdapterBase import OJAdapterBase
 
-# from .OJAdapterCodeForces import *
-# from .OJAdapterHihoCoder import *
-from .zoj.adapter import *
+ALL_ADAPTERS = dict()
+
+for file in os.listdir(os.path.dirname(__file__)):
+    file_path = os.path.join(os.path.dirname(__file__), file, 'adapter.py')
+    if os.path.isfile(file_path):
+        mod = import_module('ojadapter.adapter.' + file + '.adapter')
+        for k in dir(mod):
+            cls = getattr(mod, k)
+            if inspect.isclass(cls) and issubclass(cls, OJAdapterBase) \
+                    and cls != OJAdapterBase and cls.code:
+                ALL_ADAPTERS[cls.code] = cls()

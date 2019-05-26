@@ -145,7 +145,16 @@ class OnlineJudgeSite(models.Model):
     def __str__(self):
         return '[{}] {}'.format(self.code, self.name)
 
+    def get_adapter(self):
+        from ojadapter.adapter import ALL_ADAPTERS
+        return ALL_ADAPTERS.get(self.code)
+
     def ping_problem(self, num, force_reload=False):
+        # 如果有写适配器插件，调用专用的 download 方法
+        adapter = self.get_adapter()
+        if adapter:
+            # TODO: 赛事指定题目尚未支持
+            return self.download_problem(num, contest_id='', force_reload=force_reload)
         # 使用现存的题目
         problem = OnlineJudgeProblem.objects.filter(site=self, num=num).first()
         if problem and not force_reload:
@@ -162,7 +171,7 @@ class OnlineJudgeSite(models.Model):
         # 抓取标题
         pattern = re.compile(self.problem_title_regex, re.MULTILINE)
         result = pattern.findall(body)
-        print(body)
+        # print(body)
         if not result:
             raise AppErrors.ERROR_FETCH_PROBLEM_TITLE_NOT_MATCH
         title = result[0]
@@ -188,6 +197,33 @@ class OnlineJudgeSite(models.Model):
             problem.save()
         return problem
 
+    def download_problem(self, num, contest_id='', force_reload=False):
+        # 缓存检测
+        p, created = self.problems.get_or_create(
+            num=num,
+            contest_num=contest_id or '',
+        )
+        if not force_reload and not created and p.is_synced:
+            return p
+        # 下载
+        adapter = self.get_adapter()
+        problem = adapter.download_problem(num, contest_id)
+        # 写入数据
+        p.is_synced = True
+        p.title = problem.title
+        p.time_limit = problem.time_limit
+        p.memory_limit = problem.memory_limit
+        p.is_special_judge = problem.is_special_judge
+        p.description = problem.description
+        p.extra_description = problem.extra_description
+        p.input_specification = problem.input_specification
+        p.output_specification = problem.output_specification
+        p.input_samples = '<!--DATA-SEPARATOR-->'.join(problem.input_samples)
+        p.output_samples = '<!--DATA-SEPARATOR-->'.join(problem.output_samples)
+        p.extra_info = problem.extra_info
+        p.save()
+        return p
+
 
 class OnlineJudgeProblem(models.Model):
     site = models.ForeignKey(
@@ -202,14 +238,93 @@ class OnlineJudgeProblem(models.Model):
         max_length=50,
     )
 
+    contest_num = models.CharField(
+        verbose_name='题目编号',
+        max_length=50,
+        blank=True,
+        default='',
+    )
+
     title = models.CharField(
         verbose_name='标题',
+        blank=True,
         max_length=255,
     )
 
     content = models.TextField(
         verbose_name='题目内容',
+        blank=True,
         help_text='直接截取整个题目页面的HTML内容',
+    )
+
+    time_limit = models.IntegerField(
+        verbose_name='时间限制',
+        help_text='时间限制，单位为毫秒',
+        default=0,
+    )
+
+    memory_limit = models.IntegerField(
+        verbose_name='内存限制',
+        help_text='内存限制，单位为KB',
+        default=0,
+    )
+
+    is_special_judge = models.BooleanField(
+        verbose_name='是否SpecialJudge',
+        default=False,
+    )
+
+    description = models.TextField(
+        verbose_name='题目描述',
+        blank=True,
+        default='',
+        help_text='题目描述部分，格式为Markdown'
+    )
+
+    extra_description = models.TextField(
+        verbose_name='额外题目描述',
+        blank=True,
+        default='',
+        help_text='题目描述部分，格式为Markdown'
+    )
+
+    input_specification = models.TextField(
+        verbose_name='输入描述',
+        blank=True,
+        default='',
+        help_text='题目输入描述'
+    )
+
+    output_specification = models.TextField(
+        verbose_name='输出描述',
+        blank=True,
+        default='',
+        help_text='题目输出描述'
+    )
+
+    input_samples = models.TextField(
+        verbose_name='样例输入',
+        blank=True,
+        default='',
+        help_text='题目输出描述'
+    )
+
+    output_samples = models.TextField(
+        verbose_name='样例输出',
+        blank=True,
+        default='',
+        help_text='题目输出描述'
+    )
+
+    extra_info = models.TextField(
+        verbose_name='额外信息',
+        blank=True,
+        help_text='一些不好定位的附加信息，用 JSON 传入',
+    )
+
+    is_synced = models.BooleanField(
+        verbose_name='是否同步',
+        default=False,
     )
 
     class Meta:
@@ -223,6 +338,12 @@ class OnlineJudgeProblem(models.Model):
 
     def online_judge_url(self):
         return self.site.problem_url_template.format(num=self.num)
+
+    def get_extra_info(self, key='', default=None):
+        extra_info = json.loads(self.extra_info or '{}')
+        if not key:
+            return extra_info
+        return extra_info.get(key, default)
 
 
 class ProblemCategory(HierarchicalModel):

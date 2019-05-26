@@ -1,4 +1,5 @@
-from django.test import TestCase, SimpleTestCase
+from django.test import SimpleTestCase
+
 from .. import adapter
 
 

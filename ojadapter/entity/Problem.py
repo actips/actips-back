@@ -1,3 +1,6 @@
+import json
+
+
 class Problem(object):
 
     def __init__(self):
@@ -16,9 +19,14 @@ class Problem(object):
         self.output_specification = ''
         self.input_samples = []
         self.output_samples = []
-        self.author = ''
-        self.source = ''
+        self.extra_info = ''
 
     def print(self):
         [print('>>>>', k, '>>>>\n' + str(v), '\n<<<<\n') for k, v in self.__dict__.items()]
+
+    def get_extra_info(self, key='', default=None):
+        extra_info = json.loads(self.extra_info or '{}')
+        if not key:
+            return extra_info
+        return extra_info.get(key, default)
 
