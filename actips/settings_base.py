@@ -51,8 +51,6 @@ WECHAT_API_ROOT = 'http://wx.easecloud.cn'
 
 # ================== CELERY ======================
 
-CELERY_BROKER_URL = 'pyamqp://actips:actips@localhost:5672'  # 使用 RabbitMQ 作为消息代理
-CELERY_RESULT_BACKEND = 'redis://:root@localhost:6379/0'  # 把任务结果存在了 Redis
 CELERY_TASK_SERIALIZER = 'msgpack'  # 任务序列化和反序列化使用 msgpack 方案
 CELERY_RESULT_SERIALIZER = 'json'  # 读取任务结果一般性能要求不高，所以使用了可读性更好的JSON
 CELERY_TASK_RESULT_EXPIRES = 60 * 60 * 24  # 任务过期时间

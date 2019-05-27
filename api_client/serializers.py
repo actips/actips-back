@@ -15,6 +15,9 @@ class MemberSerializer(serializers.ModelSerializer):
 
 
 class OnlineJudgeSiteSerializer(serializers.ModelSerializer):
+    is_supported = serializers.ReadOnlyField()
+    supported_features = serializers.ReadOnlyField(source='get_supported_features')
+
     class Meta:
         model = m.OnlineJudgeSite
         fields = '__all__'

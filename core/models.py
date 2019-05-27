@@ -145,6 +145,22 @@ class OnlineJudgeSite(models.Model):
     def __str__(self):
         return '[{}] {}'.format(self.code, self.name)
 
+    def is_supported(self):
+        from ojadapter.adapter import ALL_ADAPTERS
+        return self.code in ALL_ADAPTERS
+
+    def get_supported_features(self):
+        features = []
+        adapter = self.get_adapter()
+        if adapter:
+            for key, func in adapter.__class__.__dict__.items():
+                from types import FunctionType
+                from ojadapter.adapter import OJAdapterBase
+                if type(func) == FunctionType and hasattr(OJAdapterBase, key) and \
+                        func != getattr(OJAdapterBase, key):
+                    features.append(key)
+        return features
+
     def get_adapter(self):
         from ojadapter.adapter import ALL_ADAPTERS
         return ALL_ADAPTERS.get(self.code)
