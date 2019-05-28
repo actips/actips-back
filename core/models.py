@@ -275,6 +275,8 @@ class OnlineJudgeSite(models.Model):
     def is_granted_by_current_user(self):
         from django_base.base_utils.middleware import get_request
         request = get_request()
+        if not request or not hasattr(request.user, 'member'):
+            return False
         return self.is_granted_by(request.user)
 
     def problem_count(self):
