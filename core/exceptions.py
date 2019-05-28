@@ -23,6 +23,9 @@ class AppErrors:
     ERROR_FETCH_PROBLEM_TITLE_NOT_MATCH = AppError(30003, '抓取题目错误：匹配不到题目标题')
     ERROR_POST_REQUIRE_ORIGIN_LINK = AppError(30004, '请显式声明原创或者注明原文链接')
     ERROR_COMMENT_CONTENT_TOO_SHORT = AppError(30005, '评论内容至少10个字符。')
+    ERROR_OJ_ADAPTER_REQUIRED = AppError(30006, '当前OJ适配的支持功能尚未实现')
+    ERROR_OJ_CONTEXT_INVALID = AppError(30007, 'OJ的登录授权无效')
+    ERROR_OJ_PROFILE_NOT_EXIST = AppError(30008, '尚未授权OJ登录').set_silent(True)
 
     ERROR_NOT_IMPLEMENTED = AppError(90001, '方法未实现')
 

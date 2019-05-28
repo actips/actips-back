@@ -112,6 +112,44 @@ class OnlineJudgeSiteViewSet(mixins.ListModelMixin,
             return u.response_fail('没有找到题目')
         return Response(data=s.OnlineJudgeProblemSerializer(problem).data)
 
+    @action(methods=['POST'], detail=True)
+    @member_required
+    def grant_password(self, request, pk):
+        site = self.get_object()
+        username = request.data.get('username')
+        password = request.data.get('password')
+        grant_store = request.data.get('grant_store') or False
+        profile = site.grant_password(request.user, username, password, grant_store)
+        return u.response_success('授权成功')
+
+    @action(methods=['POST'], detail=True)
+    @member_required
+    def cancel_grant(self, request, pk):
+        site = self.get_object()
+        profile = m.OnlineJudgeUserProfile.objects.filter(
+            site=site,
+            user=request.user,
+        ).first()
+        if profile:
+            profile.delete()
+        return u.response_success('已成功取消授权')
+
+    @action(methods=['GET'], detail=True)
+    @member_required
+    def get_profile(self, request, pk):
+        site = self.get_object()
+        validate = request.query_params.get('validate') == '1'
+        profile = m.OnlineJudgeUserProfile.objects.filter(
+            site=site,
+            user=request.user,
+        ).first()
+        if not profile:
+            raise AppErrors.ERROR_OJ_PROFILE_NOT_EXIST
+        if validate:
+            profile.validate()
+        # TODO: 需要返回更实质性的内容
+        return u.response_success('获取成功', silent=True)
+
 
 class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
                                 mixins.RetrieveModelMixin,
@@ -186,8 +224,8 @@ class CommentViewSet(mixins.CreateModelMixin,
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @member_required
     @action(methods=['POST'], detail=True)
+    @member_required
     def reply(self, request, pk):
         parent = self.get_object()
         content = request.data.get('content').strip()

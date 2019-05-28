@@ -67,7 +67,7 @@ class OJAdapterBase(object):
         # context.save()
         return context
 
-    def get_user_context_by_user_and_password(self, cookies, headers):
+    def get_user_context_by_user_and_password(self, username, password):
         """ 根据用户的 Cookie 和 Header 获取用户会话 """
         raise NotImplementedError
 

@@ -7,7 +7,7 @@ from django.db import models
 
 from core.exceptions import AppErrors
 from django_base.base_member.models import AbstractMember, AbstractOAuthEntry, HierarchicalModel, UserOwnedModel, \
-    ContentType
+    ContentType, DatedModel
 
 
 class Member(AbstractMember):
@@ -240,6 +240,97 @@ class OnlineJudgeSite(models.Model):
         p.save()
         return p
 
+    def grant_password(self, user, username, password, grant_store=False):
+        """ 授权用户连接到当前OJ站点，使用用户名和密码登录，生成并保存OJ用户档案，
+        如果允许保存密码，同时记录用户的密码。
+        :param user:
+        :param username:
+        :param password:
+        :param grant_store:
+        :return:
+        """
+        # 首先尝试登录进去先
+        adapter = self.get_adapter()
+        if not adapter:
+            raise AppErrors.ERROR_OJ_ADAPTER_REQUIRED
+        ctx = adapter.get_user_context_by_user_and_password(username, password)
+        ctx.save()
+        if not adapter.check_context_validity(ctx):
+            raise AppErrors.ERROR_OJ_CONTEXT_INVALID
+        # 创建OJ用户档案
+        profile, created = self.user_profiles.get_or_create(user=user)
+        if grant_store:
+            profile.username = username
+            profile.password = password
+        profile.session_info = ctx.context_id
+        profile.save()
+        # TODO: 授权之后要将用户在OJ上面的记录抓取放入任务队列
+        return profile
+
+    def is_granted_by(self, user):
+        return self.user_profiles.filter(user=user).exists()
+
+    def is_granted_by_current_user(self):
+        from django_base.base_utils.middleware import get_request
+        request = get_request()
+        return self.is_granted_by(request.user)
+
+    def problem_count(self):
+        return self.problems.filter(is_synced=True).count()
+
+    def post_count(self):
+        return ProblemPost.objects.filter(problem__site=self).count()
+
+
+class OnlineJudgeUserProfile(DatedModel):
+    site = models.ForeignKey(
+        verbose_name='OJ站点',
+        to='OnlineJudgeSite',
+        related_name='user_profiles',
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        verbose_name='用户',
+        to='auth.User',
+        related_name='online_judge_profiles',
+        on_delete=models.CASCADE,
+    )
+    username = models.CharField(
+        verbose_name='用户名',
+        max_length=255,
+        blank=True,
+        default='',
+    )
+    password = models.CharField(
+        verbose_name='密码',
+        max_length=255,
+        blank=True,
+        default='',
+    )
+    session_info = models.TextField(
+        verbose_name='会话信息',
+        blank=True,
+        default='',
+    )
+
+    class Meta:
+        verbose_name = 'OJ用户档案'
+        verbose_name_plural = 'OJ用户档案'
+        db_table = 'core_online_judge_user_profile'
+        unique_together = ['site', 'user']
+
+    def get_context(self):
+        from ojadapter.entity.UserContext import UserContext
+        return UserContext(self.session_info)
+
+    def validate(self):
+        adapter = self.site.get_adapter()
+        if not adapter:
+            raise AppErrors.ERROR_OJ_ADAPTER_REQUIRED
+        ctx = self.get_context()
+        if not adapter.check_context_validity(ctx):
+            raise AppErrors.ERROR_OJ_CONTEXT_INVALID
+
 
 class OnlineJudgeProblem(models.Model):
     site = models.ForeignKey(
@@ -360,6 +451,41 @@ class OnlineJudgeProblem(models.Model):
         if not key:
             return extra_info
         return extra_info.get(key, default)
+
+
+class OnlineJudgeSubmission(UserOwnedModel):
+    from ojadapter.entity.Submission import Submission
+    problem = models.ForeignKey(
+        verbose_name='题目',
+        to='OnlineJudgeProblem',
+        related_name='submissions',
+        on_delete=models.CASCADE,
+    )
+
+    language = models.CharField(
+        verbose_name='语言',
+        max_length=30,
+        choices=Submission.LANGUAGE_CHOICES,
+    )
+
+    code = models.TextField(
+        verbose_name='代码',
+        blank=True,
+        default='',
+    )
+
+    result = models.CharField(
+        verbose_name='结果',
+        max_length=30,
+        choices=Submission.RESULT_CHOICES,
+        blank=True,
+        default='',
+    )
+
+    class Meta:
+        verbose_name = '提交记录'
+        verbose_name_plural = '提交记录'
+        db_table = 'core_online_judge_submission'
 
 
 class ProblemCategory(HierarchicalModel):
