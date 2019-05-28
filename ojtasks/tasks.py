@@ -6,6 +6,9 @@ from ojadapter.adapter import ALL_ADAPTERS
 
 @app.task
 def pull_problems_all():
+    """ 抓取所有OJ所有的题目
+    :return:
+    """
     results = []
     for site in m.OnlineJudgeSite.objects.all():
         result = pull_problems_oj.delay(site.code)
@@ -15,6 +18,10 @@ def pull_problems_all():
 
 @app.task
 def pull_problems_oj(oj_code):
+    """ 抓取某个OJ所有的题目
+    :param oj_code:
+    :return:
+    """
     if oj_code not in ALL_ADAPTERS or \
             not m.OnlineJudgeSite.objects.filter(code=oj_code).exists():
         return False
@@ -34,8 +41,28 @@ def pull_problems_oj(oj_code):
 
 @app.task
 def pull_problem_oj(oj_code, problem_id, contest_id=''):
+    """ 抓取某个OJ指定编号的题目
+    :param oj_code:
+    :param problem_id:
+    :param contest_id:
+    :return:
+    """
     site = m.OnlineJudgeSite.objects.filter(code=oj_code).first()
     if not site:
         return None
     problem = site.download_problem(problem_id, contest_id)
     return problem.id
+
+
+@app.task
+def pull_user_submissions_oj(oj_code, user_id):
+    """ 抓取某个用户在指定OJ上的提交记录 """
+    site = m.OnlineJudgeSite.objects.filter(code=oj_code).first()
+    if not site:
+        return None
+    profile = site.user_profiles.filter(user_id=user_id).first()
+    if not profile:
+        return
+    profile.validate()
+    profile.download_submissions()
+    # submissions = site.

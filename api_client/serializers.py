@@ -35,6 +35,15 @@ class OnlineJudgeProblemSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class OnlineJudgeSubmissionSerializer(serializers.ModelSerializer):
+    problem_num = serializers.ReadOnlyField(source='problem.num')
+    problem_title = serializers.ReadOnlyField(source='problem.title')
+
+    class Meta:
+        model = m.OnlineJudgeSubmission
+        exclude = ['code']
+
+
 class ProblemCategorySerializer(serializers.ModelSerializer):
     post_count = serializers.ReadOnlyField()
 

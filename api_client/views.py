@@ -160,6 +160,15 @@ class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
     ordering = ['-pk']
 
 
+class OnlineJudgeSubmissionViewSet(mixins.ListModelMixin,
+                                   mixins.RetrieveModelMixin,
+                                   viewsets.GenericViewSet):
+    queryset = m.OnlineJudgeSubmission.objects.all()
+    serializer_class = s.OnlineJudgeSubmissionSerializer
+    filter_fields = '__all__'
+    ordering = ['-pk']
+
+
 class ProblemPostViewSet(mixins.CreateModelMixin,
                          mixins.ListModelMixin,
                          mixins.RetrieveModelMixin,

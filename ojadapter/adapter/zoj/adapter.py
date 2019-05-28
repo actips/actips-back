@@ -70,6 +70,7 @@ class OJAdapterZOJ(OJAdapterBase):
             return urljoin(self.homepage, '/onlinejudge/showProblem.do?problemCode={}'.format(problem_id))
 
     def parse_problem(self, body):
+        # TODO: 有一个比较现实的问题，对于一些图片和链接，使用了相对路径需要纠正过来，否则显示和跳转都有问题
         # 构造空白问题对象
         problem = Problem()
         problem.input_samples = ''
@@ -268,7 +269,7 @@ class OJAdapterZOJ(OJAdapterBase):
             'Non-zero Exit Code': Submission.RESULT_NON_ZERO_EXIT_CODE,
             'Floating Point Error': Submission.RESULT_FLOAT_POINT_ERROR,
             'Compilation Error': Submission.RESULT_COMPILATION_ERROR,
-            'Output Limit Exceed': Submission.RESULT_OUTPUT_LIMIT_EXCEED,
+            'Output Limit Exceeded': Submission.RESULT_OUTPUT_LIMIT_EXCEED,
             'Runtime Error': Submission.RESULT_RUNTIME_ERROR,
         }
         language_map = {
@@ -287,9 +288,9 @@ class OJAdapterZOJ(OJAdapterBase):
         submission = Submission(
             id=submission_id,
             submit_time=row.select_one('.runSubmitTime').text,
-            result=status_map.get(row.select_one('.runJudgeStatus').text.strip()),
+            result=status_map.get(row.select_one('.runJudgeStatus').text.strip()) or '',
             problem_id=row.select_one('.runProblemId').text,
-            language=language_map.get(row.select_one('.runLanguage').text),
+            language=language_map.get(row.select_one('.runLanguage').text) or '',
             run_time=int(row.select_one('.runTime').text or -1),
             run_memory=int(row.select_one('.runMemory').text or -1),
         )
@@ -320,14 +321,31 @@ class OJAdapterZOJ(OJAdapterBase):
         next_id = groups[0] if groups else None
         return rows, next_id
 
+    # def get_user_submission(self, context, submission_id):
+    #     """ 获取用户的提交列表 """
+    #     results = []
+    #     next_id = -1
+    #     # TODO: excludes 尚未实现
+    #     while next_id:
+    #         rows, next_id = self._query_submission(context, last_id=next_id)
+    #         for row in rows[1:]:
+    #             submission = self._parse_submission_row(context, row)
+    #             results.append(submission)
+    #             # print(submission.__dict__)
+    #     return results
+
     def get_user_submission_list(self, context, excludes=()):
-        """ 获取用户的提交列表 """
+        """ 获取用户的提交列表
+        TODO: 这个方法太重了，一跑起来没完没了，后面考虑一下优化的问题，将抓取任务切碎
+        """
         results = []
         next_id = -1
+        # TODO: excludes 尚未实现
         while next_id:
             rows, next_id = self._query_submission(context, last_id=next_id)
             for row in rows[1:]:
                 submission = self._parse_submission_row(context, row)
+                # print(submission.id, submission.submit_time)
                 results.append(submission)
                 # print(submission.__dict__)
         return results

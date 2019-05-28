@@ -9,6 +9,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 class Submission(object):
+    LANGUAGE_UNDEFINED = ''
     LANGUAGE_C = 'C'
     LANGUAGE_GCC = 'GCC'
     LANGUAGE_GPP = 'GPP'
@@ -21,6 +22,7 @@ class Submission(object):
     LANGUAGE_SCHEME = 'SCHEME'
     LANGUAGE_PHP = 'PHP'
     LANGUAGE_CHOICES = (
+        (LANGUAGE_UNDEFINED, ''),
         (LANGUAGE_C, 'C'),
         (LANGUAGE_GCC, 'GCC'),
         (LANGUAGE_GPP, 'G++'),
@@ -34,6 +36,7 @@ class Submission(object):
         (LANGUAGE_PHP, 'PHP'),
     )
 
+    RESULT_UNDEFINED = ''
     RESULT_ACCEPTED = 'ACCEPTED'
     RESULT_WRONG_ANSWER = 'WRONG_ANSWER'
     RESULT_TIME_LIMIT_EXCEED = 'TIME_LIMIT_EXCEED'
@@ -46,6 +49,7 @@ class Submission(object):
     RESULT_PRESENTATION_ERROR = 'PRESENTATION_ERROR'
     RESULT_FLOAT_POINT_ERROR = 'FLOAT_POINT_ERROR'
     RESULT_CHOICES = (
+        (RESULT_UNDEFINED, ''),
         (RESULT_ACCEPTED, 'Accepted'),
         (RESULT_WRONG_ANSWER, 'Wrong Answer'),
         (RESULT_TIME_LIMIT_EXCEED, 'Time Limit Exceed'),

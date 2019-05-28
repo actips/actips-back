@@ -264,7 +264,9 @@ class OnlineJudgeSite(models.Model):
             profile.password = password
         profile.session_info = ctx.context_id
         profile.save()
-        # TODO: 授权之后要将用户在OJ上面的记录抓取放入任务队列
+        # 授权之后要将用户在OJ上面的记录抓取放入任务队列
+        from ojtasks.tasks import pull_user_submissions_oj
+        pull_user_submissions_oj.delay(self.code, user.pk)
         return profile
 
     def is_granted_by(self, user):
@@ -330,6 +332,28 @@ class OnlineJudgeUserProfile(DatedModel):
         ctx = self.get_context()
         if not adapter.check_context_validity(ctx):
             raise AppErrors.ERROR_OJ_CONTEXT_INVALID
+
+    def download_submissions(self):
+        # 下载
+        adapter = self.site.get_adapter()
+        ctx = self.get_context()
+        submissions = adapter.get_user_submission_list(ctx)
+        for submission in submissions:
+            problem = self.site.problems.filter(num=submission.problem_id).first()
+            if not problem:
+                continue
+            s, created = self.user.onlinejudgesubmissions_owned.get_or_create(
+                problem=problem,
+                submission_id=submission.id,
+                language=submission.language,
+                submit_time=submission.submit_time,
+                defaults=dict()
+            )
+            s.result = submission.result
+            s.run_time = submission.run_time
+            s.run_memory = submission.run_memory
+            s.code = submission.code
+            s.save()
 
 
 class OnlineJudgeProblem(models.Model):
@@ -462,6 +486,11 @@ class OnlineJudgeSubmission(UserOwnedModel):
         on_delete=models.CASCADE,
     )
 
+    submission_id = models.IntegerField(
+        verbose_name='OJ提交编号',
+        default=0,
+    )
+
     language = models.CharField(
         verbose_name='语言',
         max_length=30,
@@ -480,6 +509,20 @@ class OnlineJudgeSubmission(UserOwnedModel):
         choices=Submission.RESULT_CHOICES,
         blank=True,
         default='',
+    )
+
+    run_time = models.IntegerField(
+        verbose_name='运行时间',
+        default=0,
+    )
+
+    run_memory = models.IntegerField(
+        verbose_name='运行内存',
+        default=0,
+    )
+
+    submit_time = models.DateTimeField(
+        verbose_name='提交时间',
     )
 
     class Meta:
