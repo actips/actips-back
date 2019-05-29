@@ -66,3 +66,19 @@ def pull_user_submissions_oj(oj_code, user_id):
     profile.validate()
     profile.download_submissions()
     # submissions = site.
+
+
+@app.task
+def submit_online_judge_problem(problem_id, user_id, language, code, contest_id=None, use_platform_account=False):
+    problem = m.OnlineJudgeProblem.objects.get(id=problem_id)
+    user = m.User.objects.get(id=user_id)
+    profile = m.OnlineJudgeUserProfile.objects.filter(user=user, site=problem.site).first()
+    adapter = problem.site.get_adapter()
+    if profile and not use_platform_account:
+        profile.validate()
+        ctx = profile.get_context()
+    else:
+        ctx = adapter.get_platform_user_context()
+    submission = adapter.submit_problem(ctx, problem.num, language, code, contest_id)
+    s = m.OnlineJudgeSubmission.make(submission, problem.site, user)
+    return s.id

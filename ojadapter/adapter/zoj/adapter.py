@@ -20,8 +20,18 @@ class OJAdapterZOJ(OJAdapterBase):
     platform_username = 'actips'
     platform_password = 'Actips@2019'
 
-    # def get_supported_languages(self):
-    #     return 1
+    def get_supported_languages(self):
+        return (
+            Submission.LANGUAGE_C,
+            Submission.LANGUAGE_GPP,
+            Submission.LANGUAGE_FPC,
+            Submission.LANGUAGE_JAVA,
+            Submission.LANGUAGE_PYTHON2,
+            Submission.LANGUAGE_PERL,
+            Submission.LANGUAGE_SCHEME,
+            Submission.LANGUAGE_PHP,
+            Submission.LANGUAGE_CPP11,
+        )
 
     def get_all_contest_numbers(self):
         soup = request_dom(urljoin(self.homepage, '/onlinejudge/showContests.do'), self.charset)

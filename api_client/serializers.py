@@ -8,6 +8,7 @@ class MemberSerializer(serializers.ModelSerializer):
     avatar_url = serializers.ReadOnlyField(source='oauth_entries.first.headimgurl')
     username = serializers.ReadOnlyField(source='user.username')
     email = serializers.ReadOnlyField(source='user.email')
+    granted_oj_sites = serializers.ReadOnlyField(source='get_granted_oj_sites')
 
     class Meta:
         model = m.Member
@@ -29,6 +30,10 @@ class OnlineJudgeSiteSerializer(serializers.ModelSerializer):
 class OnlineJudgeProblemSerializer(serializers.ModelSerializer):
     site_code = serializers.ReadOnlyField(source='site.code')
     online_judge_url = serializers.ReadOnlyField()
+    supported_languages = serializers.ReadOnlyField(source='get_supported_languages')
+    submission_count = serializers.ReadOnlyField()
+    submission_count_self = serializers.ReadOnlyField()
+    submission_count_self_accepted = serializers.ReadOnlyField()
 
     class Meta:
         model = m.OnlineJudgeProblem

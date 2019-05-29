@@ -19,6 +19,9 @@ class Member(AbstractMember):
     def __str__(self):
         return '{}:{}'.format(self.pk, self.nickname)
 
+    def get_granted_oj_sites(self):
+        return [s.id for s in OnlineJudgeSite.objects.filter(user_profiles__user=self.user)]
+
 
 class OAuthEntry(AbstractOAuthEntry):
     member = models.ForeignKey(
@@ -137,6 +140,14 @@ class OnlineJudgeSite(models.Model):
         help_text='通过抓取题目的网页 html 内容提取题目正文的 css 选择器',
     )
 
+    supported_languages = models.CharField(
+        verbose_name='支持语言',
+        max_length=255,
+        help_text='指定该题目支持提交的语言，用 | 分割',
+        blank=True,
+        default='',
+    )
+
     class Meta:
         verbose_name = 'OJ站点'
         verbose_name_plural = 'OJ站点'
@@ -144,6 +155,11 @@ class OnlineJudgeSite(models.Model):
 
     def __str__(self):
         return '[{}] {}'.format(self.code, self.name)
+
+    def save(self, *args, **kwargs):
+        if 'get_supported_languages' in self.get_supported_features():
+            self.supported_languages = '|'.join(self.get_adapter().get_supported_languages())
+        super().save(*args, **kwargs)
 
     def is_supported(self):
         from ojadapter.adapter import ALL_ADAPTERS
@@ -285,6 +301,10 @@ class OnlineJudgeSite(models.Model):
     def post_count(self):
         return ProblemPost.objects.filter(problem__site=self).count()
 
+    def get_supported_languages(self):
+        opt = self.supported_languages
+        return opt.split('|') if opt else []
+
 
 class OnlineJudgeUserProfile(DatedModel):
     site = models.ForeignKey(
@@ -341,21 +361,7 @@ class OnlineJudgeUserProfile(DatedModel):
         ctx = self.get_context()
         submissions = adapter.get_user_submission_list(ctx)
         for submission in submissions:
-            problem = self.site.problems.filter(num=submission.problem_id).first()
-            if not problem:
-                continue
-            s, created = self.user.onlinejudgesubmissions_owned.get_or_create(
-                problem=problem,
-                submission_id=submission.id,
-                language=submission.language,
-                submit_time=submission.submit_time,
-                defaults=dict()
-            )
-            s.result = submission.result
-            s.run_time = submission.run_time
-            s.run_memory = submission.run_memory
-            s.code = submission.code
-            s.save()
+            OnlineJudgeSubmission.make(submission, self.site, self.user)
 
 
 class OnlineJudgeProblem(models.Model):
@@ -388,6 +394,14 @@ class OnlineJudgeProblem(models.Model):
         verbose_name='题目内容',
         blank=True,
         help_text='直接截取整个题目页面的HTML内容',
+    )
+
+    supported_languages = models.CharField(
+        verbose_name='支持语言',
+        max_length=255,
+        help_text='指定该题目支持提交的语言，用 | 分割，如果没有填写，则为继承 OJ 的语言列表',
+        blank=True,
+        default='',
     )
 
     time_limit = models.IntegerField(
@@ -478,6 +492,21 @@ class OnlineJudgeProblem(models.Model):
             return extra_info
         return extra_info.get(key, default)
 
+    def get_supported_languages(self):
+        opt = self.supported_languages or self.site.supported_languages
+        return opt.split('|') if opt else []
+
+    def submit(self, user, language, code, use_platform_account=False):
+        adapter = self.site.get_adapter()
+        if not adapter:
+            raise AppErrors.ERROR_OJ_ADAPTER_REQUIRED
+        if 'submit_problem' not in self.site.get_supported_features():
+            raise AppErrors.ERROR_PASSWORD_TOO_SIMPLE
+        from ojtasks.tasks import submit_online_judge_problem
+        submit_online_judge_problem.delay(
+            self.id, user.id, language, code, use_platform_account=use_platform_account
+        )
+
 
 class OnlineJudgeSubmission(UserOwnedModel):
     from ojadapter.entity.Submission import Submission
@@ -531,6 +560,31 @@ class OnlineJudgeSubmission(UserOwnedModel):
         verbose_name = '提交记录'
         verbose_name_plural = '提交记录'
         db_table = 'core_online_judge_submission'
+
+    @staticmethod
+    def make(submission, site, user):
+        """ 根据 OJAdapter 获取回来的 Submission 对象构造一个提交记录并分配给制定的用户
+        :param submission:
+        :param site:
+        :param user:
+        :return:
+        """
+        problem = site.problems.filter(num=submission.problem_id).first()
+        if not problem:
+            return None
+        s, created = user.onlinejudgesubmissions_owned.get_or_create(
+            problem=problem,
+            submission_id=submission.id,
+            language=submission.language,
+            submit_time=submission.submit_time,
+            defaults=dict()
+        )
+        s.result = submission.result
+        s.run_time = submission.run_time
+        s.run_memory = submission.run_memory
+        s.code = submission.code
+        s.save()
+        return s
 
 
 class ProblemCategory(HierarchicalModel):

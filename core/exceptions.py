@@ -26,6 +26,7 @@ class AppErrors:
     ERROR_OJ_ADAPTER_REQUIRED = AppError(30006, '当前OJ适配的支持功能尚未实现')
     ERROR_OJ_CONTEXT_INVALID = AppError(30007, 'OJ的登录授权无效')
     ERROR_OJ_PROFILE_NOT_EXIST = AppError(30008, '尚未授权OJ登录').set_silent(True)
+    ERROR_OJ_FEATURE_NOT_SUPPORTED = AppError(30009, '当前OJ适配的功能尚未支持')
 
     ERROR_NOT_IMPLEMENTED = AppError(90001, '方法未实现')
 

@@ -159,6 +159,38 @@ class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
     filter_fields = '__all__'
     ordering = ['-pk']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.pk:
+            # 统计提交次数以及是否通过
+            from ojadapter.entity.Submission import Submission
+            qs = qs.annotate(
+                submission_count=models.Count(
+                    'submissions',
+                ),
+                submission_count_self=models.Count(
+                    'submissions',
+                    filter=models.Q(submissions__author=user)
+                ),
+                submission_count_self_accepted=models.Count(
+                    'submissions',
+                    filter=models.Q(submissions__result=Submission.RESULT_ACCEPTED,
+                                    submissions__author=user)
+                ),
+            )
+        return qs
+
+    @action(methods=['POST'], detail=True)
+    @member_required
+    def submit(self, request, pk):
+        problem = self.get_object()
+        language = request.data.get('language')
+        code = request.data.get('code')
+        use_platform_account = request.data.get('use_platform_account')
+        problem.submit(request.user, language, code, use_platform_account)
+        return u.response_success('提交成功')
+
 
 class OnlineJudgeSubmissionViewSet(mixins.ListModelMixin,
                                    mixins.RetrieveModelMixin,
