@@ -189,7 +189,7 @@ class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
         code = request.data.get('code')
         use_platform_account = request.data.get('use_platform_account')
         problem.submit(request.user, language, code, use_platform_account)
-        return u.response_success('提交成功')
+        return u.response_success()
 
 
 class OnlineJudgeSubmissionViewSet(mixins.ListModelMixin,

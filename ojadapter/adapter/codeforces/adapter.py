@@ -13,25 +13,26 @@ from ..OJAdapterBase import OJAdapterBase
 from urllib.parse import urljoin
 
 
-class OJAdapterZOJ(OJAdapterBase):
-    code = 'ZOJ'
-    homepage = r'http://acm.zju.edu.cn'
+class OJAdapterCodeforces(OJAdapterBase):
+    code = 'CF'
+    homepage = r'https://codeforces.com'
 
-    platform_username = 'actips'
+    platform_username = 'actips.org'
     platform_password = 'Actips@2019'
 
     def get_supported_languages(self):
-        return [
-            dict(id=1, label='C', language=Submission.LANGUAGE_C, version='gcc 4.7.2'),
-            dict(id=2, label='C++', language=Submission.LANGUAGE_CPP, version='g++ 4.7.2'),
-            dict(id=3, label='FPC', language=Submission.LANGUAGE_FPC, version='fpc 2.6.0'),
-            dict(id=4, label='Java', language=Submission.LANGUAGE_JAVA, version='java 1.7.0'),
-            dict(id=5, label='Python', language=Submission.LANGUAGE_PYTHON2, version='Python 2.7.3'),
-            dict(id=6, label='Perl', language=Submission.LANGUAGE_PERL, version='Perl 5.14.2'),
-            dict(id=7, label='Scheme', language=Submission.LANGUAGE_SCHEME, version='Guile 1.8.8'),
-            dict(id=8, label='PHP', language=Submission.LANGUAGE_PHP, version='PHP 5.4.4'),
-            dict(id=9, label='C++11', language=Submission.LANGUAGE_CPP, version='g++ 4.7.2'),
-        ]
+        """ TODO: 已经修改规则，需要重构 """
+        return (
+            # Submission.LANGUAGE_C,
+            # Submission.LANGUAGE_GPP,
+            # Submission.LANGUAGE_FPC,
+            # Submission.LANGUAGE_JAVA,
+            # Submission.LANGUAGE_PYTHON2,
+            # Submission.LANGUAGE_PERL,
+            # Submission.LANGUAGE_SCHEME,
+            # Submission.LANGUAGE_PHP,
+            # Submission.LANGUAGE_CPP11,
+        )
 
     def get_all_contest_numbers(self):
         soup = request_dom(urljoin(self.homepage, '/onlinejudge/showContests.do'), self.charset)
@@ -89,8 +90,7 @@ class OJAdapterZOJ(OJAdapterBase):
         # 开始处理
         dom = BeautifulSoup(body, 'lxml')
         # 抓取的题目编号
-        titles = dom.select_one('#content_title').text.split(' - ')
-        pid = int(titles[1 if len(titles) == 2 else 0])
+        pid = int(dom.select_one('#content_title').text.split(' - ')[1])
         # 解析标题
         problem.title = dom.select('.bigProblemTitle')[0].text.strip()
         # 解析时间限制、Special Judge
@@ -283,16 +283,25 @@ class OJAdapterZOJ(OJAdapterBase):
             'Output Limit Exceeded': Submission.RESULT_OUTPUT_LIMIT_EXCEED,
             'Runtime Error': Submission.RESULT_RUNTIME_ERROR,
         }
-        language_id = self.get_language_id_by('label', row.select_one('.runLanguage').text)
+        language_map = {
+            'C': Submission.LANGUAGE_C,
+            'C++': Submission.LANGUAGE_GPP,
+            'FPC': Submission.LANGUAGE_FPC,
+            'Java': Submission.LANGUAGE_JAVA,
+            'Python': Submission.LANGUAGE_PYTHON2,
+            'Perl': Submission.LANGUAGE_PERL,
+            'Scheme': Submission.LANGUAGE_SCHEME,
+            'PHP': Submission.LANGUAGE_PHP,
+            'C++11': Submission.LANGUAGE_CPP11,
+        }
         submission_id = row.select_one('.runId').text
         # print(row.select_one('.runJudgeStatus').text.strip())
-        print(row.select_one('.runLanguage').text, language_id)
         submission = Submission(
             id=submission_id,
             submit_time=row.select_one('.runSubmitTime').text,
             result=status_map.get(row.select_one('.runJudgeStatus').text.strip()) or '',
             problem_id=row.select_one('.runProblemId').text,
-            language_id=language_id,
+            language=language_map.get(row.select_one('.runLanguage').text) or '',
             run_time=int(row.select_one('.runTime').text or -1),
             run_memory=int(row.select_one('.runMemory').text or -1),
         )
@@ -352,19 +361,7 @@ class OJAdapterZOJ(OJAdapterBase):
                 # print(submission.__dict__)
         return results
 
-    def submit_problem(self, context, problem_id, language_id, code, contest_id=None):
-        """
-        :param context:
-        :param problem_id:
-        :param language_id: OJ 内部语言编号
-        :param code:
-        :param contest_id:
-        :return:
-        """
-        # 校验输入的语言
-        if not language_id:
-            print('>>> 提交失败：语言编码为空')
-            return None
+    def submit_problem(self, context, problem_id, language, code, contest_id=None):
         # 实际提交的 problemID 和题目的 problem_id 不一致，需要先抓过来转换一下
         resp = context.session.get(urljoin(
             self.homepage,
@@ -373,6 +370,19 @@ class OJAdapterZOJ(OJAdapterBase):
         problem_id = re.findall(r'/onlinejudge/submit\.do\?problemId=(\d+)',
                                 resp.content.decode(self.charset))[0]
         print('>>> actual problem_id = {}'.format(problem_id))
+        # 映射 language_id
+        from ojadapter.entity.Submission import Submission
+        language_id = {
+            Submission.LANGUAGE_C: 1,
+            Submission.LANGUAGE_GPP: 2,
+            Submission.LANGUAGE_FPC: 3,
+            Submission.LANGUAGE_JAVA: 4,
+            Submission.LANGUAGE_PYTHON2: 5,
+            Submission.LANGUAGE_PERL: 6,
+            Submission.LANGUAGE_SCHEME: 7,
+            Submission.LANGUAGE_PHP: 8,
+            Submission.LANGUAGE_CPP11: 9,
+        }.get(language)
         # 提交代码
         resp = context.session.post(
             url=urljoin(self.homepage, '/onlinejudge/submit.do'),

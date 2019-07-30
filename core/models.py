@@ -140,13 +140,13 @@ class OnlineJudgeSite(models.Model):
         help_text='通过抓取题目的网页 html 内容提取题目正文的 css 选择器',
     )
 
-    supported_languages = models.CharField(
-        verbose_name='支持语言',
-        max_length=255,
-        help_text='指定该题目支持提交的语言，用 | 分割',
-        blank=True,
-        default='',
-    )
+    # supported_languages = models.CharField(
+    #     verbose_name='支持语言',
+    #     max_length=255,
+    #     help_text='指定该题目支持提交的语言，取值为OJ内部的提交语言编号，用 | 分割',
+    #     blank=True,
+    #     default='',
+    # )
 
     class Meta:
         verbose_name = 'OJ站点'
@@ -156,10 +156,10 @@ class OnlineJudgeSite(models.Model):
     def __str__(self):
         return '[{}] {}'.format(self.code, self.name)
 
-    def save(self, *args, **kwargs):
-        if 'get_supported_languages' in self.get_supported_features():
-            self.supported_languages = '|'.join(self.get_adapter().get_supported_languages())
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if 'get_supported_languages' in self.get_supported_features():
+    #         self.supported_languages = '|'.join(self.get_adapter().get_supported_languages().map(lambda d: str(d.get('id'))))
+    #     super().save(*args, **kwargs)
 
     def is_supported(self):
         from ojadapter.adapter import ALL_ADAPTERS
@@ -302,8 +302,9 @@ class OnlineJudgeSite(models.Model):
         return ProblemPost.objects.filter(problem__site=self).count()
 
     def get_supported_languages(self):
-        opt = self.supported_languages
-        return opt.split('|') if opt else []
+        if 'get_supported_languages' not in self.get_supported_features():
+            return []
+        return self.get_adapter().get_supported_languages()
 
 
 class OnlineJudgeUserProfile(DatedModel):
@@ -493,10 +494,18 @@ class OnlineJudgeProblem(models.Model):
         return extra_info.get(key, default)
 
     def get_supported_languages(self):
-        opt = self.supported_languages or self.site.supported_languages
-        return opt.split('|') if opt else []
+        if 'get_supported_languages' not in self.site.get_supported_features():
+            return []
+        adapter = self.site.get_adapter()
+        all_languages = adapter.get_supported_languages()
+        # 题目无指定的话就支持 OJ 所有的语言
+        if not self.supported_languages:
+            return all_languages
+        # 题目有指定的话，按照 | 分割的 id 值筛选所有的 OJ 语言
+        ids = self.supported_languages.split('|')
+        return list(filter(lambda d: str(d.get('id')) in ids, all_languages))
 
-    def submit(self, user, language, code, use_platform_account=False):
+    def submit(self, user, language_id, code, use_platform_account=False):
         adapter = self.site.get_adapter()
         if not adapter:
             raise AppErrors.ERROR_OJ_ADAPTER_REQUIRED
@@ -504,7 +513,7 @@ class OnlineJudgeProblem(models.Model):
             raise AppErrors.ERROR_PASSWORD_TOO_SIMPLE
         from ojtasks.tasks import submit_online_judge_problem
         submit_online_judge_problem.delay(
-            self.id, user.id, language, code, use_platform_account=use_platform_account
+            self.id, user.id, language_id, code, use_platform_account=use_platform_account
         )
 
 
@@ -526,6 +535,13 @@ class OnlineJudgeSubmission(UserOwnedModel):
         verbose_name='语言',
         max_length=30,
         choices=Submission.LANGUAGE_CHOICES,
+    )
+
+    language_id = models.CharField(
+        verbose_name='语言ID',
+        max_length=30,
+        blank=True,
+        help_text='OJ的内部语言编号',
     )
 
     code = models.TextField(
@@ -572,10 +588,13 @@ class OnlineJudgeSubmission(UserOwnedModel):
         problem = site.problems.filter(num=submission.problem_id).first()
         if not problem:
             return None
+        adapter = site.get_adapter()
+        language = adapter.get_language_by_id(submission.language_id)
         s, created = user.onlinejudgesubmissions_owned.get_or_create(
             problem=problem,
             submission_id=submission.id,
-            language=submission.language,
+            language=language.get('language'),
+            language_id=language.get('id'),
             submit_time=submission.submit_time,
             defaults=dict()
         )

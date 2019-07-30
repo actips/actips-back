@@ -11,9 +11,10 @@ BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 class Submission(object):
     LANGUAGE_UNDEFINED = ''
     LANGUAGE_C = 'C'
-    LANGUAGE_GCC = 'GCC'
-    LANGUAGE_GPP = 'GPP'
-    LANGUAGE_CPP11 = 'CPP11'
+    LANGUAGE_CPP = 'CPP'
+    # LANGUAGE_GCC = 'GCC' => CPP
+    # LANGUAGE_GPP = 'GPP' => CPP
+    # LANGUAGE_CPP11 = 'CPP11' => CPP
     LANGUAGE_FPC = 'FPC'
     LANGUAGE_JAVA = 'JAVA'
     LANGUAGE_PYTHON2 = 'PYTHON2'
@@ -24,9 +25,10 @@ class Submission(object):
     LANGUAGE_CHOICES = (
         (LANGUAGE_UNDEFINED, ''),
         (LANGUAGE_C, 'C'),
-        (LANGUAGE_GCC, 'GCC'),
-        (LANGUAGE_GPP, 'G++'),
-        (LANGUAGE_CPP11, 'C++11'),
+        (LANGUAGE_CPP, 'C++'),
+        # (LANGUAGE_GCC, 'GCC'), => CPP
+        # (LANGUAGE_GPP, 'G++'), => CPP
+        # (LANGUAGE_CPP11, 'C++11'), => CPP
         (LANGUAGE_FPC, 'FPC'),
         (LANGUAGE_JAVA, 'Java'),
         (LANGUAGE_PYTHON2, 'Python2'),
@@ -65,7 +67,7 @@ class Submission(object):
 
     def __init__(self, **kwargs):
         self.id = 0
-        self.language = ''
+        self.language_id = ''
         self.result = ''
         self.run_time = 0
         self.run_memory = 0

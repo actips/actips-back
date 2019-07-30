@@ -38,7 +38,6 @@ REST_FRAMEWORK['EXCEPTION_HANDLER'] = 'core.exceptions.exception_handler'
 # =========== CRON =======================
 
 CRON_CLASSES = [
-    'apps.core.cron.SyncErpCronJob'
 ]
 
 # =============== SMS Config ===================

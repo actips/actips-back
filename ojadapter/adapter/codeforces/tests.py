@@ -261,14 +261,12 @@ int main() {
   }
   return 0;
 }"""
-        submission = self.adapter.submit_problem(
-            context, 1010, self.adapter.get_language_id_by_language(Submission.LANGUAGE_CPP), code)
+        submission = self.adapter.submit_problem(context, 1010, Submission.LANGUAGE_GPP, code)
         print(submission.__dict__)
         self.assertEqual(submission.result, Submission.RESULT_WRONG_ANSWER)
         from time import sleep
         print('wait for 10 seconds, to avoid "too fast" result')
         sleep(10)  # Or you will get a "Submit too fast" result
-        submission = self.adapter.submit_problem(
-            context, 1001, self.adapter.get_language_id_by_language(Submission.LANGUAGE_CPP), code)
+        submission = self.adapter.submit_problem(context, 1001, Submission.LANGUAGE_GPP, code)
         print(submission.__dict__)
         self.assertEqual(submission.result, Submission.RESULT_ACCEPTED)
