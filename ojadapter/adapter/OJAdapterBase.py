@@ -2,6 +2,15 @@ from ojadapter.entity.Submission import Submission
 from ojadapter.entity.UserContext import UserContext
 
 
+class OJAdapterException(Exception):
+    def __init__(self, msg='', code=0):
+        self.msg = msg
+        self.code = code
+
+    def __str__(self):
+        return '[{}] {}'.format(self.code, self.msg)
+
+
 class OJAdapterBase(object):
     """ OJ适配器类
 
@@ -21,6 +30,60 @@ class OJAdapterBase(object):
     # 平台登录OJ用的账户密码，下面这个是默认注册形式
     platform_username = 'actips'
     platform_password = 'Actips@2019'
+
+    # 工具方法
+
+    def sanitize_content(self, content, url=''):
+        """ 将 content 从 html 转为 markdown
+        并且将图片自动转储再添加引用
+        :param content: 传入的原始 html
+        :param url: 当前页面的路径（缺省为 homepage 的设定，用于计算图片路径）
+        :return: 返回 markdown 纯文本字符串
+        """
+        from bs4 import BeautifulSoup
+        from urllib.parse import urljoin
+        import os.path
+        import tempfile
+        import hashlib
+        from html2text import html2text
+
+        dom = BeautifulSoup(content, 'lxml')
+        for img in dom.select('img'):
+            # 整理图片文件绝对路径
+            src = img['src']
+            if src.startswith('/'):
+                src = urljoin(self.homepage, src)
+            elif img.get('src').startswith('http'):
+                pass
+            elif img.get('src').startswith('data:image'):
+                # TODO: 解决 base64 类型的抓取问题
+                raise NotImplementedError('base64 类图片处理尚未实现')
+            else:
+                # 相对路径
+                if not url:
+                    raise OJAdapterException('相对路径抓取图片必须指定当前页面 URL', 1000)
+                src = urljoin(url, src)
+            file_path = os.path.abspath(os.path.join(
+                os.path.abspath(os.path.dirname(__file__)),
+                '../../media/oj/' + self.code + '/images/'
+            ))
+            os.makedirs(file_path, 0o755, exist_ok=True)
+            # 下载到临时文件
+            # https://stackoverflow.com/a/26541521/2544762
+            temp_file = os.path.join(tempfile._get_default_tempdir(), next(tempfile._get_candidate_names()))
+            from urllib.request import urlretrieve
+            urlretrieve(src, temp_file)
+            # 计算图片文件的 md5 checksum
+            # https://stackoverflow.com/a/3431838/2544762
+            hash_md5 = hashlib.md5()
+            with open(temp_file, 'rb') as f:
+                for chunk in iter(lambda: f.read(4096), b''):
+                    hash_md5.update(chunk)
+            checksum = hash_md5.hexdigest()
+            os.rename(temp_file, os.path.join(file_path, checksum))
+            img['src'] = '/media/oj/' + self.code + '/images/' + checksum
+
+        return html2text(dom.decode_contents(), bodywidth=0).strip()
 
     # OJ整站配置获取部分
 

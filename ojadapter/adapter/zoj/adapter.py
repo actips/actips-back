@@ -24,7 +24,7 @@ class OJAdapterZOJ(OJAdapterBase):
         return [
             dict(id=1, label='C', language=Submission.LANGUAGE_C, version='gcc 4.7.2'),
             dict(id=2, label='C++', language=Submission.LANGUAGE_CPP, version='g++ 4.7.2'),
-            dict(id=3, label='FPC', language=Submission.LANGUAGE_FPC, version='fpc 2.6.0'),
+            dict(id=3, label='FPC', language=Submission.LANGUAGE_PASCAL, version='fpc 2.6.0'),
             dict(id=4, label='Java', language=Submission.LANGUAGE_JAVA, version='java 1.7.0'),
             dict(id=5, label='Python', language=Submission.LANGUAGE_PYTHON2, version='Python 2.7.3'),
             dict(id=6, label='Perl', language=Submission.LANGUAGE_PERL, version='Perl 5.14.2'),
@@ -149,6 +149,8 @@ class OJAdapterZOJ(OJAdapterBase):
         #         contest=(contest or '').strip()
         #     ))
         #     return problem
+
+        # 直接转化为 Markdown 再处理
         _content = html2text(content.replace('\r\n', '\n'), bodywidth=0)
         # print(_content)
         parts = [x.strip() for x in _content.split('* * *')]
@@ -263,11 +265,11 @@ class OJAdapterZOJ(OJAdapterBase):
                                  resp.content.decode(self.charset))
         return problem_ids
 
-    def get_user_failed_problem_list(self, context):
-        """ 获取用户未通过题目列表 """
-        # 可以后面翻一下提交记录
-        # ZOJ 并没有列出这个信息
-        return []
+    # def get_user_failed_problem_list(self, context):
+    #     """ 获取用户未通过题目列表 """
+    #     # 可以后面翻一下提交记录
+    #     # ZOJ 并没有列出这个信息
+    #     return []
 
     def _parse_submission_row(self, context, row):
         status_map = {
@@ -286,7 +288,7 @@ class OJAdapterZOJ(OJAdapterBase):
         language_id = self.get_language_id_by('label', row.select_one('.runLanguage').text)
         submission_id = row.select_one('.runId').text
         # print(row.select_one('.runJudgeStatus').text.strip())
-        print(row.select_one('.runLanguage').text, language_id)
+        # print(row.select_one('.runLanguage').text, language_id)
         submission = Submission(
             id=submission_id,
             submit_time=row.select_one('.runSubmitTime').text,

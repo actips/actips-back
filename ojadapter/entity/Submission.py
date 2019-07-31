@@ -12,16 +12,26 @@ class Submission(object):
     LANGUAGE_UNDEFINED = ''
     LANGUAGE_C = 'C'
     LANGUAGE_CPP = 'CPP'
-    # LANGUAGE_GCC = 'GCC' => CPP
-    # LANGUAGE_GPP = 'GPP' => CPP
-    # LANGUAGE_CPP11 = 'CPP11' => CPP
-    LANGUAGE_FPC = 'FPC'
     LANGUAGE_JAVA = 'JAVA'
     LANGUAGE_PYTHON2 = 'PYTHON2'
     LANGUAGE_PYTHON3 = 'PYTHON3'
+    LANGUAGE_PASCAL = 'PASCAL'
+    LANGUAGE_DELPHI = 'DELPHI'
     LANGUAGE_PERL = 'PERL'
     LANGUAGE_SCHEME = 'SCHEME'
     LANGUAGE_PHP = 'PHP'
+    LANGUAGE_RUBY = 'RUBY'
+    LANGUAGE_CSHARP = 'CSHARP'
+    LANGUAGE_HASKELL = 'HASKELL'
+    LANGUAGE_OCAML = 'OCAML'
+    LANGUAGE_SCALA = 'SCALA'
+    LANGUAGE_D = 'D'
+    LANGUAGE_GO = 'GO'
+    LANGUAGE_JAVASCRIPT = 'JAVASCRIPT'
+    LANGUAGE_KOTLIN = 'KOTLIN'
+    LANGUAGE_RUST = 'RUST'
+    LANGUAGE_CLANG = 'CLANG'
+    LANGUAGE_NODEJS = 'NODEJS'
     LANGUAGE_CHOICES = (
         (LANGUAGE_UNDEFINED, ''),
         (LANGUAGE_C, 'C'),
@@ -29,10 +39,23 @@ class Submission(object):
         # (LANGUAGE_GCC, 'GCC'), => CPP
         # (LANGUAGE_GPP, 'G++'), => CPP
         # (LANGUAGE_CPP11, 'C++11'), => CPP
-        (LANGUAGE_FPC, 'FPC'),
         (LANGUAGE_JAVA, 'Java'),
         (LANGUAGE_PYTHON2, 'Python2'),
         (LANGUAGE_PYTHON3, 'Python3'),
+        (LANGUAGE_PASCAL, 'Pascal'),
+        (LANGUAGE_DELPHI, 'Delphi'),
+        (LANGUAGE_RUBY, 'Ruby'),
+        (LANGUAGE_CSHARP, 'C#'),
+        (LANGUAGE_HASKELL, 'Haskell'),
+        (LANGUAGE_OCAML, 'OCaml'),
+        (LANGUAGE_SCALA, 'Scala'),
+        (LANGUAGE_D, 'D'),
+        (LANGUAGE_GO, 'Go'),
+        (LANGUAGE_JAVASCRIPT, 'JavaScript'),
+        (LANGUAGE_KOTLIN, 'Kotlin'),
+        (LANGUAGE_RUST, 'Rust'),
+        (LANGUAGE_CLANG, 'Clang'),
+        (LANGUAGE_NODEJS, 'Node.js'),
         (LANGUAGE_PERL, 'Perl'),
         (LANGUAGE_SCHEME, 'Scheme'),
         (LANGUAGE_PHP, 'PHP'),

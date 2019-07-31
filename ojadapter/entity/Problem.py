@@ -8,7 +8,7 @@ class Problem(object):
         self.contest_id = 0
         # 标题
         self.title = ''
-        # 时间限制（整数/秒）
+        # 时间限制（整数/毫秒）
         self.time_limit = 0
         # 内存限制（整数/KB）
         self.memory_limit = 0

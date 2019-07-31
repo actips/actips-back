@@ -34,7 +34,7 @@ def pull_problems_oj(oj_code):
         if not problem or not problem.is_synced:
             result = pull_problem_oj.delay(oj_code, pid)
             print(pid)
-            result.get()
+            # result.get()
             results.append(pid)
     return results
 
