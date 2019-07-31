@@ -32,29 +32,32 @@ class TestAdapterCodeforces(TestCase):
     #     url = self.adapter.get_problem_url('2056', '131')
     #     dom = request_dom(url)
     #     self.assertEqual(dom.select('span.bigProblemTitle')[0].text, 'LED Display')
+    def test_04_pdf_problem_parser(self):
+        self.adapter.download_problem('180A')
 
     def test_05_parse_problem(self):
         # 后面抓题过来每一道卡住的都要加进测试
-        html = request_text(self.adapter.get_problem_url('1188A2'))
+        # html = request_text(self.adapter.get_problem_url('1188A2'))
+        # problem = self.adapter.parse_problem(html)
+        # self.assertEqual(problem.title, 'Add on a Tree: Revolution')
+        # self.assertEqual(problem.time_limit, 1000)
+        # self.assertEqual(problem.memory_limit, 256 * 1024)
+        # self.assertFalse(problem.is_special_judge)
+        # self.assertTrue(problem.description.startswith('**Note that'))
+        # self.assertTrue(problem.description.endswith('twice.'))
+        # self.assertTrue(problem.input_specification.startswith('The first line'))
+        # self.assertTrue(problem.input_specification.endswith('and even**.'))
+        # self.assertTrue(problem.output_specification.startswith('If there aren\'t'))
+        # self.assertTrue(problem.output_specification.endswith('above.'))
+        # self.assertEqual(len(problem.input_samples), 2)
+        # self.assertEqual(problem.input_samples[0], '5\n1 2 2\n2 3 4\n3 4 10\n3 5 18')
+        # self.assertEqual(problem.input_samples[1], '6\n1 2 6\n1 3 8\n1 4 12\n2 5 2\n2 6 4')
+        # self.assertEqual(len(problem.output_samples), 2)
+        # self.assertEqual(problem.output_samples[0], 'NO')
+        # self.assertEqual(problem.output_samples[1], 'YES\n4\n3 6 1\n4 6 3\n3 4 7\n4 5 2')
+        # 鹅语的题目：524A 524B 675D 929A-E
+        html = request_text(self.adapter.get_problem_url('929A'))
         problem = self.adapter.parse_problem(html)
-
-        # TODO: 要添加 Mathjax 对嵌入的 Tex 的支持
-        self.assertEqual(problem.title, 'Add on a Tree: Revolution')
-        self.assertEqual(problem.time_limit, 1000)
-        self.assertEqual(problem.memory_limit, 256 * 1024)
-        self.assertFalse(problem.is_special_judge)
-        self.assertTrue(problem.description.startswith('**Note that'))
-        self.assertTrue(problem.description.endswith('twice.'))
-        self.assertTrue(problem.input_specification.startswith('The first line'))
-        self.assertTrue(problem.input_specification.endswith('and even**.'))
-        self.assertTrue(problem.output_specification.startswith('If there aren\'t'))
-        self.assertTrue(problem.output_specification.endswith('above.'))
-        self.assertEqual(len(problem.input_samples), 2)
-        self.assertEqual(problem.input_samples[0], '5\n1 2 2\n2 3 4\n3 4 10\n3 5 18')
-        self.assertEqual(problem.input_samples[1], '6\n1 2 6\n1 3 8\n1 4 12\n2 5 2\n2 6 4')
-        self.assertEqual(len(problem.output_samples), 2)
-        self.assertEqual(problem.output_samples[0], 'NO')
-        self.assertEqual(problem.output_samples[1], 'YES\n4\n3 6 1\n4 6 3\n3 4 7\n4 5 2')
 
     def test_06_download_problem(self):
         problem = self.adapter.download_problem('1184A3')

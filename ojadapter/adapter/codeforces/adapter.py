@@ -8,12 +8,14 @@ from html2text import html2text
 from ojadapter.entity.Problem import Problem
 from ojadapter.entity.UserContext import UserContext
 from ojadapter.entity.Submission import Submission
-from ...utils import request_dom, request_text, request_json
-from ..OJAdapterBase import OJAdapterBase
+from ...utils import request_dom, request_text, request_json, request_raw
+from ..OJAdapterBase import OJAdapterBase, OJAdapterException
 from urllib.parse import urljoin
 
 
 class OJAdapterCodeforces(OJAdapterBase):
+    # TODO: 要添加 Mathjax 对嵌入的 Tex 的支持
+
     code = 'CF'
     homepage = r'https://codeforces.com'
 
@@ -61,23 +63,80 @@ class OJAdapterCodeforces(OJAdapterBase):
     def get_all_contest_numbers(self):
         # http://codeforces.com/api/contest.list?gym=true
         data = request_json(urljoin(self.homepage, '/api/contest.list'), self.charset)
-        return sorted(x.get('id') for x in data.get('result'))
+        # 接口是按照从新到旧返回的，倒过来
+        return [x.get('id') for x in data.get('result')][::-1]
 
     def get_all_problem_numbers(self):
         data = request_json(urljoin(self.homepage, '/api/problemset.problems'), self.charset)
-        return sorted('{contestId}{index}'.format(**x) for x in data.get('result').get('problems'))
+        # 接口是按照从新到旧返回的，倒过来
+        return ['{contestId}{index}'.format(**x) for x in data.get('result').get('problems')][::-1]
+
+    def _get_contest_and_index_from_problem_id(self, problem_id):
+        if re.match(r'921\d\d', problem_id):
+            # 921 号比赛的题目编号不是 ABCDE，是 01-14，大爷的特别关照
+            contest_id = 921
+            index = problem_id[3:]
+        else:
+            # 正常情况
+            contest_id, index = re.match(r'(\d+)(.+)', problem_id).groups()
+        return contest_id, index
 
     def get_problem_url(self, problem_id, contest_id=None):
-        contest_id, index = re.match(r'(\d+)(.+)', problem_id).groups()
-        return urljoin(self.homepage, '/contest/{}/problem/{}'.format(contest_id, index))
+        return urljoin(self.homepage, '/contest/{}/problem/{}'.format(
+            *self._get_contest_and_index_from_problem_id(problem_id)))
 
     def download_problem(self, problem_id, contest_id=None):
         """ 获取并返回一个问题对象 """
-        html = request_text(self.get_problem_url(problem_id, contest_id))
-        problem = self.parse_problem(html)
-        problem.id = problem_id
+        # Codeforces 失败的奇葩之处目前发现这几点：
+        # 1 是 pdf 的题目信息，2 是 鹅语题目，3 是非字母的题目号（921比赛）
+        url = self.get_problem_url(problem_id, contest_id)
         # Codeforces 的 contest_id 是包含在 problem_id 里面的
-        contest_id, index = re.match(r'(\d+)(.+)', problem_id).groups()
+        contest_id, index = self._get_contest_and_index_from_problem_id(problem_id)
+        resp = request_raw(url)
+        if resp.headers.get('Content-Type').startswith('application/pdf'):
+            pdf_path = self.download_file(url, 'pdf')
+            # if True:
+            #     pdf_path = '/media/fuck'
+            # 其他的信息要从比赛页面的列表中获取了
+            dom = request_dom(urljoin(self.homepage, '/contest/' + contest_id))
+            title = ''
+            time_limit = 0
+            memory_limit = 0
+            for tr in dom.select('table.problems tr'):
+                if len(tr.select('td')) < 2:
+                    continue
+                td = tr.select('td')[0]
+                if td.text.strip() == index:
+                    td = tr.select('td')[1]
+                    title = td.select_one('a').text
+                    time_limit, memory_limit = re.search(r'([\d.]+)\s+s,\s+(\d+)\s+MB',
+                                                         td.select_one('.notice').text).groups()
+            problem = self.parse_problem('''
+            <div class="problem-statement">
+                <div class="header">
+                    <div class="title">{title}</div>
+                    <div class="time-limit">time limit per test{time_limit} seconds</div>
+                    <div class="memory-limit">memory limit per test{memory_limit} megabytes</div>
+                </div>
+                <div>
+                    <p>See the problem description in the 
+                    <a target="_blank" href="{pdf_path}">pdf</a> link.</p>
+                    <p>
+                        <!-- markdown 之后会被吃掉，后面再想办法 -->
+                        <object data="{pdf_path}" type="application/pdf">
+                            <embed src="{pdf_path}" type="application/pdf" />
+                            <iframe src="{pdf_path}"></iframe>
+                        </object>
+                    </p>
+                </div>
+            </div>
+            '''.format(title=title, pdf_path=pdf_path, time_limit=time_limit, memory_limit=memory_limit))
+            # TODO: 啊啊啊，pdf 啊！！！！不知如何是好！！！！
+            # raise OJAdapterException('pdf 没招了', 9999)
+        else:
+            html = resp.content.decode(self.charset)
+            problem = self.parse_problem(html)
+        problem.id = problem_id
         problem.contest_id = contest_id
         return problem
 
@@ -101,10 +160,14 @@ class OJAdapterCodeforces(OJAdapterBase):
         row_memory_limit = dom.select_one('.memory-limit').text
         # 转化为毫秒
         problem.time_limit = \
-            int(float(re.findall(r'time limit per test\s*([\d.]+)\s+seconds?', row_time_limit)[0]) * 1000)
+            int(float(re.findall(
+                r'(?:time limit per test|ограничение по времени на тест)\s*([\d.]+)\s+'
+                r'(?:seconds?|секунда|секунды)', row_time_limit)[0]) * 1000)
         # 转化为 KB
         problem.memory_limit = \
-            int(re.findall(r'memory limit per test\s*(\d+)\s+megabytes', row_memory_limit)[0]) * 1024
+            int(re.findall(
+                r'(?:memory limit per test|ограничение по памяти на тест)\s*(\d+)\s+'
+                r'(?:megabytes|мегабайт)', row_memory_limit)[0]) * 1024
         # Codefoces 没有显式声明一个题目是否为 Special Judge
         problem.is_special_judge = False
         # 解析正文内容
@@ -148,6 +211,7 @@ class OJAdapterCodeforces(OJAdapterBase):
             caption = el.select_one('.caption.titled')
             if caption and 'Problem tags' in caption.text:
                 problem.extra_info['tags'] = ','.join([box.text.strip() for box in el.select('.tag-box')])
+        problem.extra_info = json.dumps(problem.extra_info)
 
         problem.print()
         return problem

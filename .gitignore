@@ -112,5 +112,4 @@ venv.bak/
 /media
 /static
 /ojadapter/.session/*
-_trial_temp
-_trial_temp.lock
+_trial_temp*

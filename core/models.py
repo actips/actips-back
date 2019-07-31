@@ -230,11 +230,11 @@ class OnlineJudgeSite(models.Model):
         return problem
 
     def download_problem(self, num, contest_id='', force_reload=False):
+        query = dict(num=num)
+        if contest_id:
+            query['contest_num'] = contest_id
         # 缓存检测
-        p, created = self.problems.get_or_create(
-            num=num,
-            contest_num=contest_id or '',
-        )
+        p, created = self.problems.get_or_create(**query)
         if not force_reload and not created and p.is_synced:
             return p
         # 下载
@@ -242,6 +242,7 @@ class OnlineJudgeSite(models.Model):
         problem = adapter.download_problem(num, contest_id)
         # 写入数据
         p.is_synced = True
+        p.contest_num = problem.contest_id
         p.title = problem.title
         p.time_limit = problem.time_limit
         p.memory_limit = problem.memory_limit

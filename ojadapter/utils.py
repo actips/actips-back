@@ -6,11 +6,15 @@ from bs4 import BeautifulSoup
 from ojadapter.entity.UserContext import UserContext
 
 
+def request_raw(url, context=None):
+    context = context or UserContext()
+    return context.session.get(url, timeout=120)
+
+
 def request_text(url, charset='utf8', context=None):
     """ 请求一个页面，返回用 BS4 解析之后的 DOM 对象 """
     # print('>>> request_text: {}'.format(url))
-    context = context or UserContext()
-    resp = context.session.get(url, timeout=120)
+    resp = request_raw(url, context)
     body = resp.content.decode(charset)
     # print(body)
     return body

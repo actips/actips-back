@@ -33,7 +33,7 @@ def pull_problems_oj(oj_code):
         # 如果题目没有抓取过才抓取
         if not problem or not problem.is_synced:
             result = pull_problem_oj.delay(oj_code, pid)
-            print(pid)
+            # print(pid)
             # result.get()
             results.append(pid)
     return results
