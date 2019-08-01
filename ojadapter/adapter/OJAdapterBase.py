@@ -67,7 +67,11 @@ class OJAdapterBase(object):
         # https://stackoverflow.com/a/26541521/2544762
         temp_file = os.path.join(tempfile._get_default_tempdir(), next(tempfile._get_candidate_names()))
         from urllib.request import urlretrieve
-        urlretrieve(url, temp_file)
+        from urllib.error import HTTPError
+        try:
+            urlretrieve(url, temp_file)
+        except HTTPError:
+            return '/media/images/no-pic.png'
         # 计算图片文件的 md5 checksum
         # https://stackoverflow.com/a/3431838/2544762
         hash_md5 = hashlib.md5()
