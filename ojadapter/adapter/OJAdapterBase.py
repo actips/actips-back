@@ -102,7 +102,10 @@ class OJAdapterBase(object):
             img_url, = match.groups()
             match = match.group()
             # print(img_url, match)
-            return match.replace(img_url, self.download_file(img_url, 'images', current_url))
+            return match.replace(
+                # 因为 markdown 里面的转义会导致 url 里面的 ) 变成 \)
+                img_url, self.download_file(img_url.replace(r'\)', ')'), 'images', current_url)
+            )
 
         result = re.sub(r'!\[(?:\\\]|[^]])*\]\(((?:\\\)|[^)])+)\)', replace_img_src, content)
         return result
