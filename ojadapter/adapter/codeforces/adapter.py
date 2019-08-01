@@ -15,6 +15,9 @@ from urllib.parse import urljoin
 
 class OJAdapterCodeforces(OJAdapterBase):
     # TODO: 要添加 Mathjax 对嵌入的 Tex 的支持
+    # TODO: pdf 类型题目依然是一个体验不好的环节
+    # TODO: 登录和交题、下载提交记录模块还没有完成
+    # OSError: [Errno 18] Invalid cross-device link: '/tmp/m4o5v_pk' -> '/var/app/media/oj/CF/images/1e8f542ba3440a36164e78ab61f6806f'
 
     code = 'CF'
     homepage = r'https://codeforces.com'
@@ -197,10 +200,17 @@ class OJAdapterCodeforces(OJAdapterBase):
 
         sample_tests = problem_content.select_one('.sample-tests')
         if sample_tests:
+            from bs4.element import Tag
             for el in sample_tests.select('.input'):
-                problem.input_samples.append(el.select_one('pre').text.strip('\n'))
+                pre = el.select_one('pre')
+                # 输出的时候有时会是 <br>，需要过滤掉
+                problem.input_samples.append(
+                    '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
             for el in sample_tests.select('.output'):
-                problem.output_samples.append(el.select_one('pre').text.strip('\n'))
+                pre = el.select_one('pre')
+                # 输出的时候有时会是 <br>，需要过滤掉
+                problem.output_samples.append(
+                    '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
             sample_tests.decompose()
 
         problem.description = self.sanitize_content(problem_content.decode_contents())
@@ -213,7 +223,7 @@ class OJAdapterCodeforces(OJAdapterBase):
                 problem.extra_info['tags'] = ','.join([box.text.strip() for box in el.select('.tag-box')])
         problem.extra_info = json.dumps(problem.extra_info)
 
-        problem.print()
+        # problem.print()
         return problem
 
     # def get_user_context_by_user_and_password(self, username, password):

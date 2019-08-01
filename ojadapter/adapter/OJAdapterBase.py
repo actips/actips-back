@@ -71,7 +71,8 @@ class OJAdapterBase(object):
             for chunk in iter(lambda: f.read(4096), b''):
                 hash_md5.update(chunk)
         checksum = hash_md5.hexdigest()
-        os.rename(temp_file, os.path.join(file_path, checksum))
+        import shutil
+        shutil.move(temp_file, os.path.join(file_path, checksum))
         return os.path.join(base_path, checksum)
 
     def sanitize_content(self, content, url=''):
