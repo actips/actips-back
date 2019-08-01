@@ -79,8 +79,7 @@ class OJAdapterZOJ(OJAdapterBase):
         else:
             return urljoin(self.homepage, '/onlinejudge/showProblem.do?problemCode={}'.format(problem_id))
 
-    def parse_problem(self, body):
-        # TODO: 有一个比较现实的问题，对于一些图片和链接，使用了相对路径需要纠正过来，否则显示和跳转都有问题
+    def parse_problem(self, body, current_url=''):
         # 构造空白问题对象
         problem = Problem()
         problem.input_samples = ''
@@ -163,22 +162,22 @@ class OJAdapterZOJ(OJAdapterBase):
         for line in parts[2].split('\n'):
 
             # 特殊格式补刀，例如 1067-1075
-            if re.match('^[^\w]*(?:ex|s)ample[^\w]*$', line.lower()):
+            if re.match(r'^[^\w]*(?:ex|s)ample[^\w]*$', line.lower()):
                 example_flag = True
                 continue
 
             # 分块
-            if re.match('^[^\w]*input(?: format)?[^\w]*$', line.lower()):
+            if re.match(r'^[^\w]*input(?: format)?[^\w]*$', line.lower()):
                 stage = 3 if example_flag else 1  # 主要为了照顾 1067-1075 这种格式
                 continue
-            elif re.match('^[^\w]*output(?: format)?[^\w]*$', line.lower()):
+            elif re.match(r'^[^\w]*output(?: format)?[^\w]*$', line.lower()):
                 stage = 4 if example_flag else 2  # 主要为了照顾 1067-1075 这种格式
                 continue
-            elif re.match('^[^\w]*(?:ex|s)ample\s*input[^\w]*$', line.lower()):
+            elif re.match(r'^[^\w]*(?:ex|s)ample\s*input[^\w]*$', line.lower()):
                 stage = 3
                 continue
-            elif re.match('^[^\w]*(?:ex|s)ample\s*output[^\w]*$', line.lower()) \
-                    or re.match('^[^\w]*output for (?:the )?sample input[^\w]*$', line.lower()):
+            elif re.match(r'^[^\w]*(?:ex|s)ample\s*output[^\w]*$', line.lower()) \
+                    or re.match(r'^[^\w]*output for (?:the )?sample input[^\w]*$', line.lower()):
                 stage = 4
                 continue
 
@@ -220,15 +219,15 @@ class OJAdapterZOJ(OJAdapterBase):
                 val = line[pos + 1:].strip('* ')
                 problem.extra_info[key] = val
 
-        problem.description = problem.description.strip()
-        problem.input_specification = problem.input_specification.strip()
-        problem.output_specification = problem.output_specification.strip()
+        problem.description = self.sanitize_markdown(problem.description.strip(), current_url)
+        problem.input_specification = self.sanitize_markdown(problem.input_specification.strip(), current_url)
+        problem.output_specification = self.sanitize_markdown(problem.output_specification.strip(), current_url)
         problem.input_samples = [problem.input_samples.strip()]
         problem.output_samples = [problem.output_samples.strip()]
-        problem.extra_description = problem.extra_description.strip()
+        problem.extra_description = self.sanitize_markdown(problem.extra_description.strip(), current_url)
         problem.extra_info = json.dumps(problem.extra_info)
 
-        problem.print()
+        # problem.print()
         return problem
 
     def get_user_context_by_user_and_password(self, username, password):

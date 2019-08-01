@@ -143,7 +143,7 @@ class OJAdapterCodeforces(OJAdapterBase):
         problem.contest_id = contest_id
         return problem
 
-    def parse_problem(self, body):
+    def parse_problem(self, body, current_url=''):
         # 构造空白问题对象
         problem = Problem()
         problem.input_samples = []
@@ -157,7 +157,7 @@ class OJAdapterCodeforces(OJAdapterBase):
         for el in dom.select('.tex-font-style-tt'):
             el.name = 'code'  # to markdown `<content>`
         # 解析标题
-        problem.title = re.sub('^[^.]+\.\s+', '', dom.select('div.title')[0].text.strip())
+        problem.title = re.sub(r'^[^.]+\.\s+', '', dom.select('div.title')[0].text.strip())
         # 解析时间限制、Special Judge
         row_time_limit = dom.select_one('.time-limit').text
         row_memory_limit = dom.select_one('.memory-limit').text
@@ -181,21 +181,21 @@ class OJAdapterCodeforces(OJAdapterBase):
         if input_specification:
             input_specification.select_one('.section-title').decompose()
             problem.input_specification = \
-                self.sanitize_content(input_specification.decode_contents())
+                self.sanitize_html(input_specification.decode_contents(), current_url)
             input_specification.decompose()
 
         output_specification = problem_content.select_one('.output-specification')
         if output_specification:
             output_specification.select_one('.section-title').decompose()
             problem.output_specification = \
-                self.sanitize_content(output_specification.decode_contents())
+                self.sanitize_html(output_specification.decode_contents(), current_url)
             output_specification.decompose()
 
         note = problem_content.select_one('.note')
         if note:
             note.select_one('.section-title').decompose()
             problem.extra_description = \
-                self.sanitize_content(note.decode_contents())
+                self.sanitize_html(note.decode_contents(), current_url)
             note.decompose()
 
         sample_tests = problem_content.select_one('.sample-tests')
@@ -213,7 +213,7 @@ class OJAdapterCodeforces(OJAdapterBase):
                     '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
             sample_tests.decompose()
 
-        problem.description = self.sanitize_content(problem_content.decode_contents())
+        problem.description = self.sanitize_html(problem_content.decode_contents(), current_url)
 
         # 解析 problem tags
         for el in dom.select('.sidebox'):

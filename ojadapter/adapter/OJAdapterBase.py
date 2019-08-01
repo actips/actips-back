@@ -38,14 +38,16 @@ class OJAdapterBase(object):
 
     # 工具方法
 
-    def download_file(self, url, folder):
+    def download_file(self, url, folder, current_url=''):
         """ 下载一个 url 的文件，放到指定的 media 目录，文件名
         :param url: 下载的 URL 链接
         :param folder: /media/oj/<OJ_CODE>/ 下的子目录名
+        :param current_url: 当前页面的路径（缺省为 homepage 的设定，用于计算图片路径）
         :return: 返回 /media 开头的路径
         """
+        # print(url, folder, current_url)
         if url.startswith('/'):
-            url = urljoin(self.homepage, url)
+            url = urljoin(current_url or self.homepage, url)
         elif url.startswith('http'):
             pass
         elif url.startswith('data:image'):
@@ -53,7 +55,9 @@ class OJAdapterBase(object):
             raise NotImplementedError('base64 类图片处理尚未实现')
         else:
             # 相对路径
-            raise NotImplementedError('相对路径未提供当前页面路径')
+            if not current_url:
+                raise NotImplementedError('相对路径未提供当前页面路径')
+            url = urljoin(current_url, url)
         # 写入目标地址
         base_path = '/media/oj/' + self.code + '/' + folder + '/'
         file_path = os.path.abspath(
@@ -75,11 +79,28 @@ class OJAdapterBase(object):
         shutil.move(temp_file, os.path.join(file_path, checksum))
         return os.path.join(base_path, checksum)
 
-    def sanitize_content(self, content, url=''):
-        """ 将 content 从 html 转为 markdown
+    def sanitize_markdown(self, content, current_url=''):
+        """ 将 content 从 markdown 整理内容
         并且将图片自动转储再添加引用
         :param content: 传入的原始 html
-        :param url: 当前页面的路径（缺省为 homepage 的设定，用于计算图片路径）
+        :param current_url: 当前页面的路径（缺省为 homepage 的设定，用于计算图片路径）
+        :return: 返回 markdown 纯文本字符串
+        """
+        import re
+
+        def replace_img_src(match):
+            img_url, = match.groups()
+            match = match.group()
+            return match.replace(img_url, self.download_file(img_url, 'images', current_url))
+
+        result = re.sub(r'!\[[^}]*]\(([^)]+)\)', replace_img_src, content)
+        return result
+
+    def sanitize_html(self, content, current_url=''):
+        """ 将 content 从 html 转为 markdown 并且整理内容
+        并且将图片自动转储再添加引用
+        :param content: 传入的原始 html
+        :param current_url: 当前页面的路径（缺省为 homepage 的设定，用于计算图片路径）
         :return: 返回 markdown 纯文本字符串
         """
         from bs4 import BeautifulSoup
@@ -88,7 +109,7 @@ class OJAdapterBase(object):
         dom = BeautifulSoup(content, 'lxml')
         for img in dom.select('img'):
             # 整理图片文件绝对路径
-            img['src'] = self.download_file(img['src'], 'images')
+            img['src'] = self.download_file(img['src'], 'images', current_url)
 
         return html2text(dom.decode_contents(), bodywidth=0).strip()
 
@@ -157,9 +178,10 @@ class OJAdapterBase(object):
         """
         raise NotImplementedError
 
-    def parse_problem(self, body):
+    def parse_problem(self, body, current_url=''):
         """ 通过题目内容解析出题目的内容
         :param body: 请求问题链接获取的响应内容字符串（Unicode）
+        :param current_url: 当前题目所在页面链接，用于计算资源相对路径
         :return:
         """
         raise NotImplementedError
@@ -207,8 +229,9 @@ class OJAdapterBase(object):
     def download_problem(self, problem_id, contest_id=None):
         """ 获取并返回一个问题对象 """
         from ..utils import request_text
-        html = request_text(self.get_problem_url(problem_id, contest_id))
-        problem = self.parse_problem(html)
+        url = self.get_problem_url(problem_id, contest_id)
+        html = request_text(url)
+        problem = self.parse_problem(html, url)
         problem.id = problem_id
         problem.contest_id = contest_id
         return problem

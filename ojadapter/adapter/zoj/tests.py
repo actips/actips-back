@@ -272,3 +272,9 @@ int main() {
             context, 1001, self.adapter.get_language_id_by_language(Submission.LANGUAGE_CPP), code)
         print(submission.__dict__)
         self.assertEqual(submission.result, Submission.RESULT_ACCEPTED)
+
+    def test_12_download_image_from_problem(self):
+        problem = self.adapter.download_problem(1002)
+        # problem.print()
+        self.assertTrue('![](/media/oj/ZOJ/images/62a3199026722a7583905260b6167523)' in problem.description)
+
