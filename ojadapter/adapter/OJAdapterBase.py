@@ -45,6 +45,7 @@ class OJAdapterBase(object):
         :param current_url: 当前页面的路径（缺省为 homepage 的设定，用于计算图片路径）
         :return: 返回 /media 开头的路径
         """
+        origin_url = url
         # print(url, folder, current_url)
         if url.startswith('/'):
             url = urljoin(current_url or self.homepage, url)
@@ -71,7 +72,11 @@ class OJAdapterBase(object):
         try:
             urlretrieve(url, temp_file)
         except HTTPError:
+            print('HTTPError', url)
             return '/media/images/no-pic.png'
+        except Exception as e:
+            print(e, url)
+            return origin_url
         # 计算图片文件的 md5 checksum
         # https://stackoverflow.com/a/3431838/2544762
         hash_md5 = hashlib.md5()
