@@ -158,6 +158,10 @@ class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
     serializer_class = s.OnlineJudgeProblemSerializer
     filter_fields = '__all__'
     ordering = ['-pk']
+    allowed_deep_params = (
+        'site__code__iexact',
+        'num__iexact',
+    )
 
     def get_queryset(self):
         qs = super().get_queryset()

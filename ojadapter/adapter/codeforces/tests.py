@@ -28,10 +28,6 @@ class TestAdapterCodeforces(TestCase):
         dom = request_dom(url)
         self.assertEqual(dom.select('div.title')[0].text, 'D2. RGB Substring (hard version)')
 
-    # def test_04_get_contest_problem_url(self):
-    #     url = self.adapter.get_problem_url('2056', '131')
-    #     dom = request_dom(url)
-    #     self.assertEqual(dom.select('span.bigProblemTitle')[0].text, 'LED Display')
     def test_04_pdf_problem_parser(self):
         self.adapter.download_problem('180A')
 
