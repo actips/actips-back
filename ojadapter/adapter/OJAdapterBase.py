@@ -104,7 +104,7 @@ class OJAdapterBase(object):
             # print(img_url, match)
             return match.replace(img_url, self.download_file(img_url, 'images', current_url))
 
-        result = re.sub(r'!\[(?:\\\]|[^]])*\]\(([^)]+)\)', replace_img_src, content)
+        result = re.sub(r'!\[(?:\\\]|[^]])*\]\((\\\)|[^)]+)\)', replace_img_src, content)
         return result
 
     def sanitize_html(self, content, current_url=''):
