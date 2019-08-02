@@ -18,7 +18,7 @@ class OJAdapterBZOJ(OJAdapterBase):
     # TODO: 登录和交题、下载提交记录模块还没有完成
 
     name = '大视野在线评测'
-    code = 'CF'
+    code = 'BZOJ'
     charset = 'utf8'
     homepage = r'https://lydsy.com'
 
