@@ -20,6 +20,8 @@ class Problem(object):
         self.input_samples = []
         self.output_samples = []
         self.extra_info = ''
+        self.is_pdf = False
+        self.attachments = []
 
     def print(self):
         [print('>>>>', k, '>>>>\n' + str(v), '\n<<<<\n') for k, v in self.__dict__.items()]

@@ -14,11 +14,14 @@ from urllib.parse import urljoin
 
 
 class OJAdapterZOJ(OJAdapterBase):
+    name = '浙江大学 Online Judge'
     code = 'ZOJ'
+    charset = 'utf8'
     homepage = r'http://acm.zju.edu.cn'
 
     platform_username = 'actips'
     platform_password = 'Actips@2019'
+    platform_email = 'admin@actips.org'
 
     def get_supported_languages(self):
         return [

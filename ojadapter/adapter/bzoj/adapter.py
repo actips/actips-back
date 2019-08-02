@@ -13,208 +13,191 @@ from ..OJAdapterBase import OJAdapterBase, OJAdapterException
 from urllib.parse import urljoin
 
 
-class OJAdapterCodeforces(OJAdapterBase):
-    # TODO: 要添加 Mathjax 对嵌入的 Tex 的支持（前端已经勉强简单处理了）
+class OJAdapterBZOJ(OJAdapterBase):
     # TODO: pdf 类型题目依然是一个体验不好的环节
     # TODO: 登录和交题、下载提交记录模块还没有完成
 
-    name = 'Codeforces'
+    name = '大视野在线评测'
     code = 'CF'
     charset = 'utf8'
-    homepage = r'https://codeforces.com'
+    homepage = r'https://lydsy.com'
 
-    platform_username = 'actips.org'
+    platform_username = 'actips'
     platform_password = 'Actips@2019'
     platform_email = 'admin@actips.org'
 
-    # API key-secret
-    # platform_username = 'dd352833dcf086818aaa59db9e3914ae963834f7'
-    # platform_password = 'db6af912eab8c288e4d17b87cd29c48be2828663'
-
-    def get_supported_languages(self):
-        # TODO: 这个 id 并不是连续的，要遍历所有Problem统计一下有没有遗漏
-        # TODO: 在 Codeforces 提交列表里面出来的 label 值还要重新测试一遍
-        return [
-            dict(id=2, label='MS C++', language=Submission.LANGUAGE_CPP, version='Microsoft Visual C++ 2010'),
-            dict(id=3, language=Submission.LANGUAGE_DELPHI, version='Delphi 7'),
-            dict(id=4, language=Submission.LANGUAGE_PASCAL, version='Free Pascal 3.0.2'),
-            dict(id=6, language=Submission.LANGUAGE_PHP, version='PHP 7.2.13'),
-            dict(id=7, language=Submission.LANGUAGE_PYTHON2, version='Python 2.7.15'),
-            dict(id=8, language=Submission.LANGUAGE_RUBY, version='Ruby 2.0.0p645'),
-            dict(id=9, language=Submission.LANGUAGE_CSHARP, version='C# Mono 5.18'),
-            dict(id=12, language=Submission.LANGUAGE_HASKELL, version='Haskell GHC 8.6.3'),
-            dict(id=13, language=Submission.LANGUAGE_PERL, version='Perl 5.20.1'),
-            dict(id=19, language=Submission.LANGUAGE_OCAML, version='OCaml 4.02.1'),
-            dict(id=20, language=Submission.LANGUAGE_SCALA, version='Scala 2.12.8'),
-            dict(id=28, language=Submission.LANGUAGE_D, version='D DMD32 v2.086.0'),
-            dict(id=31, language=Submission.LANGUAGE_PYTHON3, version='Python 3.7.2'),
-            dict(id=32, language=Submission.LANGUAGE_GO, version='Go 1.12.6'),
-            dict(id=34, language=Submission.LANGUAGE_JAVASCRIPT, version='JavaScript V8 4.8.0'),
-            dict(id=36, language=Submission.LANGUAGE_JAVA, version='Java 1.8.0_162'),
-            dict(id=40, language=Submission.LANGUAGE_PYTHON2, version='PyPy 2.7 (7.1.1)'),
-            dict(id=41, language=Submission.LANGUAGE_PYTHON3, version='PyPy 3.6 (7.1.1)'),
-            dict(id=42, language=Submission.LANGUAGE_CPP, version='GNU G++11 5.1.0'),
-            dict(id=43, language=Submission.LANGUAGE_C, version='GNU GCC C11 5.1.0'),
-            dict(id=48, language=Submission.LANGUAGE_KOTLIN, version='Kotlin 1.3.10'),
-            dict(id=49, language=Submission.LANGUAGE_RUST, version='Rust 1.35.0'),
-            dict(id=50, label='GNU C++14', language=Submission.LANGUAGE_CPP, version='GNU G++14 6.4.0'),
-            dict(id=51, language=Submission.LANGUAGE_PASCAL, version='PascalABC.NET 3.4.2'),
-            dict(id=52, language=Submission.LANGUAGE_CLANG, version='Clang++17 Diagnostics'),
-            dict(id=54, label='GNU C++17', language=Submission.LANGUAGE_CPP, version='GNU G++17 7.3.0'),
-            dict(id=55, language=Submission.LANGUAGE_NODEJS, version='Node.js 9.4.0'),
-            dict(id=59, label='MS C++', language=Submission.LANGUAGE_CPP, version='Microsoft Visual C++ 2017')
-        ]
-
-    def get_all_contest_numbers(self):
-        # http://codeforces.com/api/contest.list?gym=true
-        data = request_json(urljoin(self.homepage, '/api/contest.list'), self.charset)
-        # 接口是按照从新到旧返回的，倒过来
-        return [x.get('id') for x in data.get('result')][::-1]
-
-    def get_all_problem_numbers(self):
-        data = request_json(urljoin(self.homepage, '/api/problemset.problems'), self.charset)
-        # 接口是按照从新到旧返回的，倒过来
-        return ['{contestId}{index}'.format(**x) for x in data.get('result').get('problems')][::-1]
-
-    def _get_contest_and_index_from_problem_id(self, problem_id):
-        if re.match(r'921\d\d', problem_id):
-            # 921 号比赛的题目编号不是 ABCDE，是 01-14，大爷的特别关照
-            contest_id = 921
-            index = problem_id[3:]
-        else:
-            # 正常情况
-            contest_id, index = re.match(r'(\d+)(.+)', problem_id).groups()
-        return contest_id, index
-
-    def get_problem_url(self, problem_id, contest_id=None):
-        return urljoin(self.homepage, '/contest/{}/problem/{}'.format(
-            *self._get_contest_and_index_from_problem_id(problem_id)))
-
-    def download_problem(self, problem_id, contest_id=None):
-        """ 获取并返回一个问题对象 """
-        # Codeforces 失败的奇葩之处目前发现这几点：
-        # 1 是 pdf 的题目信息，2 是 鹅语题目，3 是非字母的题目号（921比赛）
-        url = self.get_problem_url(problem_id, contest_id)
-        # Codeforces 的 contest_id 是包含在 problem_id 里面的
-        contest_id, index = self._get_contest_and_index_from_problem_id(problem_id)
-        resp = request_raw(url)
-
-        if resp.headers.get('Content-Type').startswith('application/pdf'):
-            # PDF 的特殊处理
-            pdf_path = self.download_file(url, 'pdf')
-            # 其他的信息要从比赛页面的列表中获取了
-            dom = request_dom(urljoin(self.homepage, '/contest/' + contest_id))
-            title = ''
-            time_limit = 0
-            memory_limit = 0
-            for tr in dom.select('table.problems tr'):
-                if len(tr.select('td')) < 2:
-                    continue
-                td = tr.select('td')[0]
-                if td.text.strip() == index:
-                    td = tr.select('td')[1]
-                    title = td.select_one('a').text
-                    time_limit, memory_limit = re.search(r'([\d.]+)\s+s,\s+(\d+)\s+MB',
-                                                         td.select_one('.notice').text).groups()
-            problem = Problem()
-            problem.title = title
-            problem.time_limit = int(float(time_limit) * 1000)
-            problem.memory_limit = int(memory_limit) * 1024
-            problem.is_pdf = True
-            problem.attachments = [dict(
-                filename='{}.pdf'.format(problem_id),
-                path=pdf_path,
-            )]
-        else:
-            html = resp.content.decode(self.charset)
-            problem = self.parse_problem(html)
-        problem.id = problem_id
-        problem.contest_id = contest_id
-        return problem
-
-    def parse_problem(self, body, current_url=''):
-        # 构造空白问题对象
-        problem = Problem()
-        problem.input_samples = []
-        problem.output_samples = []
-        problem.extra_info = dict()
-        # 开始处理
-        dom = BeautifulSoup(body, 'lxml')
-        # Codeforces 专有，转换加粗的标签
-        for el in dom.select('.tex-font-style-bf'):
-            el.name = 'strong'  # to markdown **<content>**
-        for el in dom.select('.tex-font-style-tt'):
-            el.name = 'code'  # to markdown `<content>`
-        # 解析标题
-        problem.title = re.sub(r'^[^.]+\.\s+', '', dom.select('div.title')[0].text.strip())
-        # 解析时间限制、Special Judge
-        row_time_limit = dom.select_one('.time-limit').text
-        row_memory_limit = dom.select_one('.memory-limit').text
-        # 转化为毫秒
-        problem.time_limit = \
-            int(float(re.findall(
-                r'(?:time limit per test|ограничение по времени на тест)\s*([\d.]+)\s+'
-                r'(?:seconds?|секунда|секунды)', row_time_limit)[0]) * 1000)
-        # 转化为 KB
-        problem.memory_limit = \
-            int(re.findall(
-                r'(?:memory limit per test|ограничение по памяти на тест)\s*(\d+)\s+'
-                r'(?:megabytes|мегабайт)', row_memory_limit)[0]) * 1024
-        # Codefoces 没有显式声明一个题目是否为 Special Judge
-        problem.is_special_judge = False
-        # 解析正文内容
-        problem_content = dom.select_one('.problem-statement')
-        problem_content.select_one('.header').decompose()
-
-        input_specification = problem_content.select_one('.input-specification')
-        if input_specification:
-            input_specification.select_one('.section-title').decompose()
-            problem.input_specification = \
-                self.sanitize_html(input_specification.decode_contents(), current_url)
-            input_specification.decompose()
-
-        output_specification = problem_content.select_one('.output-specification')
-        if output_specification:
-            output_specification.select_one('.section-title').decompose()
-            problem.output_specification = \
-                self.sanitize_html(output_specification.decode_contents(), current_url)
-            output_specification.decompose()
-
-        note = problem_content.select_one('.note')
-        if note:
-            note.select_one('.section-title').decompose()
-            problem.extra_description = \
-                self.sanitize_html(note.decode_contents(), current_url)
-            note.decompose()
-
-        sample_tests = problem_content.select_one('.sample-tests')
-        if sample_tests:
-            from bs4.element import Tag
-            for el in sample_tests.select('.input'):
-                pre = el.select_one('pre')
-                # 输出的时候有时会是 <br>，需要过滤掉
-                problem.input_samples.append(
-                    '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
-            for el in sample_tests.select('.output'):
-                pre = el.select_one('pre')
-                # 输出的时候有时会是 <br>，需要过滤掉
-                problem.output_samples.append(
-                    '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
-            sample_tests.decompose()
-
-        problem.description = self.sanitize_html(problem_content.decode_contents(), current_url)
-
-        # 解析 problem tags
-        for el in dom.select('.sidebox'):
-            # print(el)
-            caption = el.select_one('.caption.titled')
-            if caption and 'Problem tags' in caption.text:
-                problem.extra_info['tags'] = ','.join([box.text.strip() for box in el.select('.tag-box')])
-        problem.extra_info = json.dumps(problem.extra_info)
-
-        # problem.print()
-        return problem
-
+    # def get_supported_languages(self):
+    #     return [
+    #         dict(id=0, label='C', language=Submission.LANGUAGE_C, version='gcc 4.4.5'),
+    #         dict(id=1, label='C++', language=Submission.LANGUAGE_CPP, version='glibc 2.3.6'),
+    #         dict(id=2, label='Pascal', language=Submission.LANGUAGE_PASCAL, version='Free Pascal 2.4.0-2'),
+    #         dict(id=3, label='Java', language=Submission.LANGUAGE_JAVA, version='Java 1.6.0_162'),
+    #         dict(id=6, label='Python', language=Submission.LANGUAGE_PYTHON2, version='PHP 7.2.13'),
+    #     ]
+    #
+    # def get_all_contest_numbers(self):
+    #     # http://codeforces.com/api/contest.list?gym=true
+    #     data = request_json(urljoin(self.homepage, '/api/contest.list'), self.charset)
+    #     # 接口是按照从新到旧返回的，倒过来
+    #     return [x.get('id') for x in data.get('result')][::-1]
+    #
+    # def get_all_problem_numbers(self):
+    #     data = request_json(urljoin(self.homepage, '/api/problemset.problems'), self.charset)
+    #     # 接口是按照从新到旧返回的，倒过来
+    #     return ['{contestId}{index}'.format(**x) for x in data.get('result').get('problems')][::-1]
+    #
+    # def _get_contest_and_index_from_problem_id(self, problem_id):
+    #     if re.match(r'921\d\d', problem_id):
+    #         # 921 号比赛的题目编号不是 ABCDE，是 01-14，大爷的特别关照
+    #         contest_id = 921
+    #         index = problem_id[3:]
+    #     else:
+    #         # 正常情况
+    #         contest_id, index = re.match(r'(\d+)(.+)', problem_id).groups()
+    #     return contest_id, index
+    #
+    # def get_problem_url(self, problem_id, contest_id=None):
+    #     return urljoin(self.homepage, '/contest/{}/problem/{}'.format(
+    #         *self._get_contest_and_index_from_problem_id(problem_id)))
+    #
+    # def download_problem(self, problem_id, contest_id=None):
+    #     """ 获取并返回一个问题对象 """
+    #     # Codeforces 失败的奇葩之处目前发现这几点：
+    #     # 1 是 pdf 的题目信息，2 是 鹅语题目，3 是非字母的题目号（921比赛）
+    #     url = self.get_problem_url(problem_id, contest_id)
+    #     # Codeforces 的 contest_id 是包含在 problem_id 里面的
+    #     contest_id, index = self._get_contest_and_index_from_problem_id(problem_id)
+    #     resp = request_raw(url)
+    #     if resp.headers.get('Content-Type').startswith('application/pdf'):
+    #         pdf_path = self.download_file(url, 'pdf')
+    #         # if True:
+    #         #     pdf_path = '/media/fuck'
+    #         # 其他的信息要从比赛页面的列表中获取了
+    #         dom = request_dom(urljoin(self.homepage, '/contest/' + contest_id))
+    #         title = ''
+    #         time_limit = 0
+    #         memory_limit = 0
+    #         for tr in dom.select('table.problems tr'):
+    #             if len(tr.select('td')) < 2:
+    #                 continue
+    #             td = tr.select('td')[0]
+    #             if td.text.strip() == index:
+    #                 td = tr.select('td')[1]
+    #                 title = td.select_one('a').text
+    #                 time_limit, memory_limit = re.search(r'([\d.]+)\s+s,\s+(\d+)\s+MB',
+    #                                                      td.select_one('.notice').text).groups()
+    #         problem = self.parse_problem('''
+    #         <div class="problem-statement">
+    #             <div class="header">
+    #                 <div class="title">{title}</div>
+    #                 <div class="time-limit">time limit per test{time_limit} seconds</div>
+    #                 <div class="memory-limit">memory limit per test{memory_limit} megabytes</div>
+    #             </div>
+    #             <div>
+    #                 <p>See the problem description in the
+    #                 <a target="_blank" href="{pdf_path}">pdf</a> link.</p>
+    #                 <p>
+    #                     <!-- markdown 之后会被吃掉，后面再想办法 -->
+    #                     <object data="{pdf_path}" type="application/pdf">
+    #                         <embed src="{pdf_path}" type="application/pdf" />
+    #                         <iframe src="{pdf_path}"></iframe>
+    #                     </object>
+    #                 </p>
+    #             </div>
+    #         </div>
+    #         '''.format(title=title, pdf_path=pdf_path, time_limit=time_limit, memory_limit=memory_limit))
+    #         # TODO: 啊啊啊，pdf 啊！！！！不知如何是好！！！！
+    #         # raise OJAdapterException('pdf 没招了', 9999)
+    #     else:
+    #         html = resp.content.decode(self.charset)
+    #         problem = self.parse_problem(html)
+    #     problem.id = problem_id
+    #     problem.contest_id = contest_id
+    #     return problem
+    #
+    # def parse_problem(self, body, current_url=''):
+    #     # 构造空白问题对象
+    #     problem = Problem()
+    #     problem.input_samples = []
+    #     problem.output_samples = []
+    #     problem.extra_info = dict()
+    #     # 开始处理
+    #     dom = BeautifulSoup(body, 'lxml')
+    #     # Codeforces 专有，转换加粗的标签
+    #     for el in dom.select('.tex-font-style-bf'):
+    #         el.name = 'strong'  # to markdown **<content>**
+    #     for el in dom.select('.tex-font-style-tt'):
+    #         el.name = 'code'  # to markdown `<content>`
+    #     # 解析标题
+    #     problem.title = re.sub(r'^[^.]+\.\s+', '', dom.select('div.title')[0].text.strip())
+    #     # 解析时间限制、Special Judge
+    #     row_time_limit = dom.select_one('.time-limit').text
+    #     row_memory_limit = dom.select_one('.memory-limit').text
+    #     # 转化为毫秒
+    #     problem.time_limit = \
+    #         int(float(re.findall(
+    #             r'(?:time limit per test|ограничение по времени на тест)\s*([\d.]+)\s+'
+    #             r'(?:seconds?|секунда|секунды)', row_time_limit)[0]) * 1000)
+    #     # 转化为 KB
+    #     problem.memory_limit = \
+    #         int(re.findall(
+    #             r'(?:memory limit per test|ограничение по памяти на тест)\s*(\d+)\s+'
+    #             r'(?:megabytes|мегабайт)', row_memory_limit)[0]) * 1024
+    #     # Codefoces 没有显式声明一个题目是否为 Special Judge
+    #     problem.is_special_judge = False
+    #     # 解析正文内容
+    #     problem_content = dom.select_one('.problem-statement')
+    #     problem_content.select_one('.header').decompose()
+    #
+    #     input_specification = problem_content.select_one('.input-specification')
+    #     if input_specification:
+    #         input_specification.select_one('.section-title').decompose()
+    #         problem.input_specification = \
+    #             self.sanitize_html(input_specification.decode_contents(), current_url)
+    #         input_specification.decompose()
+    #
+    #     output_specification = problem_content.select_one('.output-specification')
+    #     if output_specification:
+    #         output_specification.select_one('.section-title').decompose()
+    #         problem.output_specification = \
+    #             self.sanitize_html(output_specification.decode_contents(), current_url)
+    #         output_specification.decompose()
+    #
+    #     note = problem_content.select_one('.note')
+    #     if note:
+    #         note.select_one('.section-title').decompose()
+    #         problem.extra_description = \
+    #             self.sanitize_html(note.decode_contents(), current_url)
+    #         note.decompose()
+    #
+    #     sample_tests = problem_content.select_one('.sample-tests')
+    #     if sample_tests:
+    #         from bs4.element import Tag
+    #         for el in sample_tests.select('.input'):
+    #             pre = el.select_one('pre')
+    #             # 输出的时候有时会是 <br>，需要过滤掉
+    #             problem.input_samples.append(
+    #                 '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
+    #         for el in sample_tests.select('.output'):
+    #             pre = el.select_one('pre')
+    #             # 输出的时候有时会是 <br>，需要过滤掉
+    #             problem.output_samples.append(
+    #                 '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
+    #         sample_tests.decompose()
+    #
+    #     problem.description = self.sanitize_html(problem_content.decode_contents(), current_url)
+    #
+    #     # 解析 problem tags
+    #     for el in dom.select('.sidebox'):
+    #         # print(el)
+    #         caption = el.select_one('.caption.titled')
+    #         if caption and 'Problem tags' in caption.text:
+    #             problem.extra_info['tags'] = ','.join([box.text.strip() for box in el.select('.tag-box')])
+    #     problem.extra_info = json.dumps(problem.extra_info)
+    #
+    #     # problem.print()
+    #     return problem
+    #
     # def get_user_context_by_user_and_password(self, username, password):
     #     context = UserContext()
     #     # from requests.cookies import cookiejar_from_dict
@@ -275,7 +258,7 @@ class OJAdapterCodeforces(OJAdapterBase):
         # if resp.status_code >= 400:
         #     return None
         # # context.save()
-        return context
+        # return context
 
     # def check_context_validity(self, context):
     #     resp = context.session.get(urljoin(self.homepage, 'onlinejudge'))

@@ -254,6 +254,8 @@ class OnlineJudgeSite(models.Model):
         p.input_samples = '<!--DATA-SEPARATOR-->'.join(problem.input_samples)
         p.output_samples = '<!--DATA-SEPARATOR-->'.join(problem.output_samples)
         p.extra_info = problem.extra_info
+        p.is_pdf = problem.is_pdf
+        p.attachments = json.dumps(problem.attachments)
         p.save()
         return p
 
@@ -471,9 +473,21 @@ class OnlineJudgeProblem(models.Model):
         help_text='一些不好定位的附加信息，用 JSON 传入',
     )
 
+    is_pdf = models.BooleanField(
+        verbose_name='是否pdf内容',
+        default=False
+    )
+
     is_synced = models.BooleanField(
         verbose_name='是否同步',
         default=False,
+    )
+
+    attachments = models.TextField(
+        verbose_name='附件清单',
+        default='[]',
+        help_text='JSON分割的附件链接清单，采集时应预处理进 /media/oj/???/attachments/checksum，'
+                  '记录原文件名 [{filename: "...", checksum: "..."}, ...]',
     )
 
     class Meta:

@@ -28,6 +28,7 @@ class OJAdapterBase(object):
     一定要完整编写单元测试！
     """
     # 匹配 OnlineJudgeSite 的 code
+    name = ''
     code = None
     charset = 'utf8'
     homepage = None
@@ -35,6 +36,7 @@ class OJAdapterBase(object):
     # 平台登录OJ用的账户密码，下面这个是默认注册形式
     platform_username = 'actips'
     platform_password = 'Actips@2019'
+    platform_email = 'admin@actips.org'
 
     # 工具方法
 
