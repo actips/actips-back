@@ -66,8 +66,7 @@ class ProblemPostSerializer(serializers.ModelSerializer):
         source='problem.site.code')
     problem_num = serializers.ReadOnlyField(
         source='problem.num')
-    problem_url = serializers.ReadOnlyField(
-        source='problem.online_judge_url')
+    problem_url = serializers.ReadOnlyField()
     problems_related_item = OnlineJudgeProblemSerializer(
         source='problems_related', many=True, read_only=True)
     categories_item = ProblemCategorySerializer(

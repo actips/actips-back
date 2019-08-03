@@ -742,6 +742,12 @@ class ProblemPost(UserOwnedModel):
             raise AppErrors.ERROR_POST_REQUIRE_ORIGIN_LINK
         super().save(*args, **kwargs)
 
+    def problem_url(self):
+        if self.problem.site.is_supported():
+            # TODO: 写死的站内链接，后期要解耦一下
+            return '/problem/{}/{}'.format(self.problem.site.code, self.problem.num)
+        return self.problem.online_judge_url()
+
 
 class UserLog(UserOwnedModel):
     date_created = models.DateTimeField(
