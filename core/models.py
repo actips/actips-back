@@ -511,6 +511,9 @@ class OnlineJudgeProblem(models.Model):
         return '{}{}'.format(self.site.code, self.num)
 
     def online_judge_url(self):
+        if self.site.is_supported():
+            adapter = self.site.get_adapter()
+            return adapter.get_problem_url(self.num, self.contest_num)
         return self.site.problem_url_template.format(num=self.num)
 
     def get_extra_info(self, key='', default=None):
