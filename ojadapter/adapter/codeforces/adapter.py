@@ -15,7 +15,6 @@ from urllib.parse import urljoin
 
 class OJAdapterCodeforces(OJAdapterBase):
     # TODO: 要添加 Mathjax 对嵌入的 Tex 的支持（前端已经勉强简单处理了）
-    # TODO: pdf 类型题目依然是一个体验不好的环节
     # TODO: 登录和交题、下载提交记录模块还没有完成
 
     name = 'Codeforces'

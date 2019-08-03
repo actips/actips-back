@@ -14,423 +14,278 @@ from urllib.parse import urljoin
 
 
 class OJAdapterBZOJ(OJAdapterBase):
-    # TODO: pdf 类型题目依然是一个体验不好的环节
-    # TODO: 登录和交题、下载提交记录模块还没有完成
+    """
+    BZOJ 要校验 UserAgent，直接抓会 404。
+    BZOJ 的换行排版很混乱，有些用 div，有些用 br，而且全部硬换行，所以只能将就了。
+    """
+    # TODO: 有一类 pdf 内链类型的题目有必要将目标保存到本站，例如 5509
 
     name = '大视野在线评测'
     code = 'BZOJ'
     charset = 'utf8'
     homepage = r'https://lydsy.com'
-
     platform_username = 'actips'
     platform_password = 'Actips@2019'
     platform_email = 'admin@actips.org'
 
-    # def get_supported_languages(self):
-    #     return [
-    #         dict(id=0, label='C', language=Submission.LANGUAGE_C, version='gcc 4.4.5'),
-    #         dict(id=1, label='C++', language=Submission.LANGUAGE_CPP, version='glibc 2.3.6'),
-    #         dict(id=2, label='Pascal', language=Submission.LANGUAGE_PASCAL, version='Free Pascal 2.4.0-2'),
-    #         dict(id=3, label='Java', language=Submission.LANGUAGE_JAVA, version='Java 1.6.0_162'),
-    #         dict(id=6, label='Python', language=Submission.LANGUAGE_PYTHON2, version='PHP 7.2.13'),
-    #     ]
-    #
+    def get_supported_languages(self):
+        return [
+            dict(id=0, label='C', language=Submission.LANGUAGE_C, version='gcc 4.4.5'),
+            dict(id=1, label='C++', language=Submission.LANGUAGE_CPP, version='glibc 2.3.6'),
+            dict(id=2, label='Pascal', language=Submission.LANGUAGE_PASCAL, version='Free Pascal 2.4.0-2'),
+            dict(id=3, label='Java', language=Submission.LANGUAGE_JAVA, version='Java 1.6.0_162'),
+            dict(id=4, label='Ruby', language=Submission.LANGUAGE_RUBY, version=''),
+            dict(id=5, label='Bash', language=Submission.LANGUAGE_BASH, version=''),
+            dict(id=6, label='Python', language=Submission.LANGUAGE_PYTHON2, version='PHP 7.2.13'),
+        ]
+
     # def get_all_contest_numbers(self):
-    #     # http://codeforces.com/api/contest.list?gym=true
-    #     data = request_json(urljoin(self.homepage, '/api/contest.list'), self.charset)
-    #     # 接口是按照从新到旧返回的，倒过来
-    #     return [x.get('id') for x in data.get('result')][::-1]
-    #
-    # def get_all_problem_numbers(self):
-    #     data = request_json(urljoin(self.homepage, '/api/problemset.problems'), self.charset)
-    #     # 接口是按照从新到旧返回的，倒过来
-    #     return ['{contestId}{index}'.format(**x) for x in data.get('result').get('problems')][::-1]
-    #
-    # def _get_contest_and_index_from_problem_id(self, problem_id):
-    #     if re.match(r'921\d\d', problem_id):
-    #         # 921 号比赛的题目编号不是 ABCDE，是 01-14，大爷的特别关照
-    #         contest_id = 921
-    #         index = problem_id[3:]
-    #     else:
-    #         # 正常情况
-    #         contest_id, index = re.match(r'(\d+)(.+)', problem_id).groups()
-    #     return contest_id, index
-    #
-    # def get_problem_url(self, problem_id, contest_id=None):
-    #     return urljoin(self.homepage, '/contest/{}/problem/{}'.format(
-    #         *self._get_contest_and_index_from_problem_id(problem_id)))
-    #
-    # def download_problem(self, problem_id, contest_id=None):
-    #     """ 获取并返回一个问题对象 """
-    #     # Codeforces 失败的奇葩之处目前发现这几点：
-    #     # 1 是 pdf 的题目信息，2 是 鹅语题目，3 是非字母的题目号（921比赛）
-    #     url = self.get_problem_url(problem_id, contest_id)
-    #     # Codeforces 的 contest_id 是包含在 problem_id 里面的
-    #     contest_id, index = self._get_contest_and_index_from_problem_id(problem_id)
-    #     resp = request_raw(url)
-    #     if resp.headers.get('Content-Type').startswith('application/pdf'):
-    #         pdf_path = self.download_file(url, 'pdf')
-    #         # if True:
-    #         #     pdf_path = '/media/fuck'
-    #         # 其他的信息要从比赛页面的列表中获取了
-    #         dom = request_dom(urljoin(self.homepage, '/contest/' + contest_id))
-    #         title = ''
-    #         time_limit = 0
-    #         memory_limit = 0
-    #         for tr in dom.select('table.problems tr'):
-    #             if len(tr.select('td')) < 2:
-    #                 continue
-    #             td = tr.select('td')[0]
-    #             if td.text.strip() == index:
-    #                 td = tr.select('td')[1]
-    #                 title = td.select_one('a').text
-    #                 time_limit, memory_limit = re.search(r'([\d.]+)\s+s,\s+(\d+)\s+MB',
-    #                                                      td.select_one('.notice').text).groups()
-    #         problem = self.parse_problem('''
-    #         <div class="problem-statement">
-    #             <div class="header">
-    #                 <div class="title">{title}</div>
-    #                 <div class="time-limit">time limit per test{time_limit} seconds</div>
-    #                 <div class="memory-limit">memory limit per test{memory_limit} megabytes</div>
-    #             </div>
-    #             <div>
-    #                 <p>See the problem description in the
-    #                 <a target="_blank" href="{pdf_path}">pdf</a> link.</p>
-    #                 <p>
-    #                     <!-- markdown 之后会被吃掉，后面再想办法 -->
-    #                     <object data="{pdf_path}" type="application/pdf">
-    #                         <embed src="{pdf_path}" type="application/pdf" />
-    #                         <iframe src="{pdf_path}"></iframe>
-    #                     </object>
-    #                 </p>
-    #             </div>
-    #         </div>
-    #         '''.format(title=title, pdf_path=pdf_path, time_limit=time_limit, memory_limit=memory_limit))
-    #         # TODO: 啊啊啊，pdf 啊！！！！不知如何是好！！！！
-    #         # raise OJAdapterException('pdf 没招了', 9999)
-    #     else:
-    #         html = resp.content.decode(self.charset)
-    #         problem = self.parse_problem(html)
-    #     problem.id = problem_id
-    #     problem.contest_id = contest_id
-    #     return problem
-    #
-    # def parse_problem(self, body, current_url=''):
-    #     # 构造空白问题对象
-    #     problem = Problem()
-    #     problem.input_samples = []
-    #     problem.output_samples = []
-    #     problem.extra_info = dict()
-    #     # 开始处理
-    #     dom = BeautifulSoup(body, 'lxml')
-    #     # Codeforces 专有，转换加粗的标签
-    #     for el in dom.select('.tex-font-style-bf'):
-    #         el.name = 'strong'  # to markdown **<content>**
-    #     for el in dom.select('.tex-font-style-tt'):
-    #         el.name = 'code'  # to markdown `<content>`
-    #     # 解析标题
-    #     problem.title = re.sub(r'^[^.]+\.\s+', '', dom.select('div.title')[0].text.strip())
-    #     # 解析时间限制、Special Judge
-    #     row_time_limit = dom.select_one('.time-limit').text
-    #     row_memory_limit = dom.select_one('.memory-limit').text
-    #     # 转化为毫秒
-    #     problem.time_limit = \
-    #         int(float(re.findall(
-    #             r'(?:time limit per test|ограничение по времени на тест)\s*([\d.]+)\s+'
-    #             r'(?:seconds?|секунда|секунды)', row_time_limit)[0]) * 1000)
-    #     # 转化为 KB
-    #     problem.memory_limit = \
-    #         int(re.findall(
-    #             r'(?:memory limit per test|ограничение по памяти на тест)\s*(\d+)\s+'
-    #             r'(?:megabytes|мегабайт)', row_memory_limit)[0]) * 1024
-    #     # Codefoces 没有显式声明一个题目是否为 Special Judge
-    #     problem.is_special_judge = False
-    #     # 解析正文内容
-    #     problem_content = dom.select_one('.problem-statement')
-    #     problem_content.select_one('.header').decompose()
-    #
-    #     input_specification = problem_content.select_one('.input-specification')
-    #     if input_specification:
-    #         input_specification.select_one('.section-title').decompose()
-    #         problem.input_specification = \
-    #             self.sanitize_html(input_specification.decode_contents(), current_url)
-    #         input_specification.decompose()
-    #
-    #     output_specification = problem_content.select_one('.output-specification')
-    #     if output_specification:
-    #         output_specification.select_one('.section-title').decompose()
-    #         problem.output_specification = \
-    #             self.sanitize_html(output_specification.decode_contents(), current_url)
-    #         output_specification.decompose()
-    #
-    #     note = problem_content.select_one('.note')
-    #     if note:
-    #         note.select_one('.section-title').decompose()
-    #         problem.extra_description = \
-    #             self.sanitize_html(note.decode_contents(), current_url)
-    #         note.decompose()
-    #
-    #     sample_tests = problem_content.select_one('.sample-tests')
-    #     if sample_tests:
-    #         from bs4.element import Tag
-    #         for el in sample_tests.select('.input'):
-    #             pre = el.select_one('pre')
-    #             # 输出的时候有时会是 <br>，需要过滤掉
-    #             problem.input_samples.append(
-    #                 '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
-    #         for el in sample_tests.select('.output'):
-    #             pre = el.select_one('pre')
-    #             # 输出的时候有时会是 <br>，需要过滤掉
-    #             problem.output_samples.append(
-    #                 '\n'.join([line for line in pre.contents if not isinstance(line, Tag)]).strip('\n'))
-    #         sample_tests.decompose()
-    #
-    #     problem.description = self.sanitize_html(problem_content.decode_contents(), current_url)
-    #
-    #     # 解析 problem tags
-    #     for el in dom.select('.sidebox'):
-    #         # print(el)
-    #         caption = el.select_one('.caption.titled')
-    #         if caption and 'Problem tags' in caption.text:
-    #             problem.extra_info['tags'] = ','.join([box.text.strip() for box in el.select('.tag-box')])
-    #     problem.extra_info = json.dumps(problem.extra_info)
-    #
-    #     # problem.print()
-    #     return problem
-    #
-    # def get_user_context_by_user_and_password(self, username, password):
-    #     context = UserContext()
-    #     # from requests.cookies import cookiejar_from_dict
-    #     # cookie_str = 'JSESSIONID=F2D80B8A1EB6F01ABBC3DB6E93D6B1B8-n1'
-    #     #              # 'lastOnlineTimeUpdaterInvocation=1564554364726; __utmc=71512449; __utmz=71512449.1556204443.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); _ym_uid=1556204446401314995; _ym_d=1556204446; 39ce7=CF9iRVAW; __utma=71512449.11295113.1556204443.1564543936.1564548953.9; evercookie_etag=aljyst33rolg7nqnlh; evercookie_cache=aljyst33rolg7nqnlh; evercookie_png=aljyst33rolg7nqnlh; 70a7c28f3de=aljyst33rolg7nqnlh; X-User=; X-User-Sha1=a9ecea30205efe270872f6a64711bf3a9b49e128; lastOnlineTimeUpdaterInvocation=1564551615687; __utmt=1; __utmb=71512449.37.10.1564548953'
-    #     # cookie_dict = dict()
-    #     # for p in cookie_str.split('; '):
-    #     #     k, v = re.match('^([^=]+)=(.*)$', p).groups()
-    #     #     cookie_dict[k] = v
-    #     # print(cookie_dict)
-    #     # context.session.cookies = cookiejar_from_dict(cookie_dict)
-    #     #
-    #     # resp = context.session.get(urljoin(self.homepage, '/settings/api'))
-    #     # print(resp.content.decode())
-    #     # print('fish_ball' in resp.content.decode())
-    #     # return
-    #
-    #     # apt install chromium-chromedriver
-    #     print('Ah-ha')
-    #     from selenium import webdriver
-    #     from selenium.webdriver.chrome.options import Options
-    #     chrome_options = Options()
-    #     print('Ouch')
-    #     chrome_options.add_argument('--headless')
-    #     chrome_options.add_argument('--disable-gpu')
-    #     driver = webdriver.Chrome(options=chrome_options)
-    #     print('Yah!!')
-    #     driver.get(urljoin(self.homepage, '/enter'))
-    #     print('Woo!!')
-    #     e1 = driver.find_element_by_id('handleOrEmail')
-    #     e2 = driver.find_element_by_id('password')
-    #     print(e1, e2)
+    #     soup = request_dom(urljoin(self.homepage, '/JudgeOnline/contest.php'), self.charset)
+    #     results = soup.select('table')[1].select
+    #     nums = []
+    #     for a in results:
+    #         matches = re.findall(r'/onlinejudge/showContestProblems\.do\?contestId=(\d+)', a.attrs.get('href'))
+    #         if matches:
+    #             nums.append(matches[0])
+    #     return sorted(nums)
 
-        # resp = context.session.get(url=urljoin(self.homepage, '/enter'))
-        # body = resp.content.decode()
-        # csrftoken = re.search(r'<meta name="X-Csrf-Token" content="([0-9a-f]+)"/>', body).groups()[0]
-        # print(context.session.cookies)
-        # from random import random
-        # _ftaa = ''.join(str(int(random() * 10)) for x in range(18))
-        # print(_ftaa)
-        # # print(body)
-        # _ftaa = re.search(r'window._ftaa = "([0-9a-z]+)"', body).groups()[0]
-        # _bfaa = re.search(r'window._bfaa = "([0-9a-z]+)"', body).groups()[0]
-        # print(csrftoken, _ftaa, _bfaa)
-        #
-        # resp = context.session.post(
-        #     url=urljoin(self.homepage, '/enter'),
-        #     data=dict(
-        #         csrf_token=csrftoken,
-        #         action='enter',
-        #         ftaa=_ftaa,
-        #         bfaa=_bfaa,
-        #         handleOrEmail=username,
-        #         password=password,
-        #         _tta='726',
-        #     ),
-        # )
-        # if resp.status_code >= 400:
-        #     return None
-        # # context.save()
-        # return context
+    def get_all_problem_numbers(self):
+        from threading import Thread
+        # 获取种子页
+        base_url = urljoin(self.homepage, '/JudgeOnline/problemset.php')
+        soup = request_dom(base_url, self.charset)
+        nums = set()
 
-    # def check_context_validity(self, context):
-    #     resp = context.session.get(urljoin(self.homepage, 'onlinejudge'))
-    #     content = resp.content.decode(self.charset)
-    #     groups = re.findall(r'showUserStatus\.do\?userId=(\d+)', content)
-    #     return bool(groups)
-    #
-    # def get_user_solved_problem_list(self, context):
-    #     """ 获取用户已通过题目列表 """
-    #     data = context.session.get(urljoin(self.homepage, '/api/problemset.problems'))
-    #     print(data.get('result').get('problems'))
-    #     return sorted('{contestId}{index}'.format(**x) for x in data.get('result').get('problems'))
-    #     return []
-    #     # 获取用户 id
-    #     resp = context.session.get(urljoin(self.homepage, 'onlinejudge'))
-    #     content = resp.content.decode(self.charset)
-    #     # print(content)
-    #     groups = re.findall(r'showUserStatus\.do\?userId=(\d+)', content)
-    #     # print(groups)
-    #     user_id = groups[0]
-    #     # 获取状态页面
-    #     resp = context.session.get(urljoin(
-    #         self.homepage, 'onlinejudge/showUserStatus.do?userId={}'.format(user_id)
-    #     ))
-    #     problem_ids = re.findall(r'href="/onlinejudge/showProblem\.do\?problemCode=(\d+)"',
-    #                              resp.content.decode(self.charset))
-    #     return problem_ids
-    #
+        def parse_numbers_from_url(url):
+            sp = request_dom(url, self.charset)
+            for tr in sp.select('table#problemset tbody tr'):
+                if len(tr) != 6:
+                    continue
+                num = int(tr.select('td')[1].text)
+                nums.add(num)
+
+        t = Thread(target=parse_numbers_from_url, args=[base_url])
+        t.start()
+        threads = [t]
+        for a in soup.select('h3 a'):
+            href = a.attrs.get('href')
+            if href and href.startswith('problemset.php?page='):
+                t = Thread(target=parse_numbers_from_url, args=[urljoin(base_url, href)])
+                t.start()
+                threads.append(t)
+        for t in threads:
+            t.join()
+        # print(nums)
+        return sorted(nums)
+
+    def get_problem_url(self, problem_id, contest_id=None):
+        return urljoin(self.homepage, '/JudgeOnline/problem.php?id={}'.format(problem_id))
+
+    def parse_problem(self, body, current_url=''):
+        # 构造空白问题对象
+        problem = Problem()
+        problem.input_samples = []
+        problem.output_samples = []
+        problem.extra_info = dict()
+        # 开始处理
+        dom = BeautifulSoup(body, 'lxml')
+        section = ''
+        cache = ''
+
+        def commit_section():
+            nonlocal cache
+            """ 保存一个信息节 """
+            if section == 'Description':
+                cache = re.sub(r'<br\s*/?>', '', cache)
+                problem.description = self.sanitize_html(cache, current_url)
+            elif section == 'Input':
+                cache = re.sub(r'<br\s*/?>', '', cache)
+                problem.input_specification = self.sanitize_html(cache, current_url)
+            elif section == 'Output':
+                cache = re.sub(r'<br\s*/?>', '', cache)
+                problem.output_specification = self.sanitize_html(cache, current_url)
+            elif section == 'HINT':
+                cache = re.sub(r'<br\s*/?>', '', cache)
+                problem.extra_description = self.sanitize_html(cache, current_url)
+            elif section == 'Source':
+                if not cache.strip():
+                    return
+                problem.extra_info['source'] = self.sanitize_html(cache, current_url).strip()
+            elif section == 'Sample Input':
+                data = html2text(cache).strip('\n')
+                data = '\n'.join([re.sub(r'\s\s$', '', line) for line in data.split('\n')])
+                problem.input_samples = [data]
+            elif section == 'Sample Output':
+                data = html2text(cache).strip('\n')
+                data = '\n'.join([re.sub(r'\s\s$', '', line) for line in data.split('\n')])
+                problem.output_samples = [data]
+
+        for block in dom.select('body > *'):
+            block_content = block.decode_contents()
+            # 跳过标题行
+            if 'image/logo.png' in block_content:
+                continue
+            elif block.name == 'title':
+                matches = re.match(r'Problem \d+\.\s+--\s+(.+)', block_content)
+                if matches:
+                    problem.title = matches.groups()[0]
+            elif block.name == 'center' and 'Time Limit:' in block_content:
+                matches = re.search(r'Time Limit:\s+</span>\s*(\d+(?:\.\d+)?)\s+Sec', block_content)
+                if matches:
+                    problem.time_limit = int(float(matches.groups()[0]) * 1000)
+                matches = re.search(r'Memory Limit:\s+</span>\s*(\d+(?:\.\d+)?)\s+MB', block_content)
+                if matches:
+                    problem.memory_limit = int(matches.groups()[0]) * 1024
+            elif block.name == 'h2':
+                if block_content in {'Description', 'Input', 'Output',
+                                     'Sample Input', 'Sample Output', 'HINT', 'Source'}:
+                    commit_section()
+                    section = block_content
+                    cache = ''
+            elif block.name == 'div':
+                cache += block_content
+
+        # problem.print()
+        return problem
+
+    def get_user_context_by_user_and_password(self, username, password):
+        context = UserContext()
+        resp = context.session.post(
+            url=urljoin(self.homepage, '/JudgeOnline/login.php'),
+            data=dict(user_id=username, password=password, submit='Submit'),
+        )
+        if resp.status_code >= 400:
+            return None
+        # context.save()
+        return context
+
+    def check_context_validity(self, context):
+        resp = context.session.get(urljoin(self.homepage, '/JudgeOnline/'))
+        content = resp.content.decode(self.charset)
+        return '<a href=logout.php' in content
+
+    def get_user_solved_problem_list(self, context):
+        """ 获取用户已通过题目列表 """
+        dom = request_dom(urljoin(
+            self.homepage,
+            '/JudgeOnline/userinfo.php?user={}'.format(self._get_current_handle(context))
+        ), self.charset, context)
+        txt = dom.select_one('td[rowspan=14]').decode_contents()
+        return re.findall(r'p\((\d+)\)', txt)
+
     # def get_user_failed_problem_list(self, context):
     #     """ 获取用户未通过题目列表 """
     #     # 可以后面翻一下提交记录
     #     # ZOJ 并没有列出这个信息
     #     return []
-    #
-    # def _parse_submission_row(self, context, row):
-    #     status_map = {
-    #         'Accepted': Submission.RESULT_ACCEPTED,
-    #         'Presentation Error': Submission.RESULT_PRESENTATION_ERROR,
-    #         'Wrong Answer': Submission.RESULT_WRONG_ANSWER,
-    #         'Time Limit Exceeded': Submission.RESULT_TIME_LIMIT_EXCEED,
-    #         'Memory Limit Exceeded': Submission.RESULT_MEMORY_LIMIT_EXCEED,
-    #         'Segmentation Fault': Submission.RESULT_SEGMENT_FAULT,
-    #         'Non-zero Exit Code': Submission.RESULT_NON_ZERO_EXIT_CODE,
-    #         'Floating Point Error': Submission.RESULT_FLOAT_POINT_ERROR,
-    #         'Compilation Error': Submission.RESULT_COMPILATION_ERROR,
-    #         'Output Limit Exceeded': Submission.RESULT_OUTPUT_LIMIT_EXCEED,
-    #         'Runtime Error': Submission.RESULT_RUNTIME_ERROR,
-    #     }
-    #     language_map = {
-    #         'C': Submission.LANGUAGE_C,
-    #         'C++': Submission.LANGUAGE_GPP,
-    #         'FPC': Submission.LANGUAGE_PASCAL,
-    #         'Java': Submission.LANGUAGE_JAVA,
-    #         'Python': Submission.LANGUAGE_PYTHON2,
-    #         'Perl': Submission.LANGUAGE_PERL,
-    #         'Scheme': Submission.LANGUAGE_SCHEME,
-    #         'PHP': Submission.LANGUAGE_PHP,
-    #         'C++11': Submission.LANGUAGE_CPP11,
-    #     }
-    #     submission_id = row.select_one('.runId').text
-    #     # print(row.select_one('.runJudgeStatus').text.strip())
-    #     submission = Submission(
-    #         id=submission_id,
-    #         submit_time=row.select_one('.runSubmitTime').text,
-    #         result=status_map.get(row.select_one('.runJudgeStatus').text.strip()) or '',
-    #         problem_id=row.select_one('.runProblemId').text,
-    #         language=language_map.get(row.select_one('.runLanguage').text) or '',
-    #         run_time=int(row.select_one('.runTime').text or -1),
-    #         run_memory=int(row.select_one('.runMemory').text or -1),
-    #     )
-    #     # print(row)
-    #     code = context.session \
-    #         .get(urljoin(self.homepage, row.select_one('.runLanguage a').attrs.get('href'))) \
-    #         .content.decode(self.charset)
-    #     submission.code = code
-    #     return submission
-    #
-    # def _query_submission(self, context, handle=None, first_id=-1, last_id=-1, id_start='', id_end=''):
-    #     handle = handle or context.session.cookies['oj_handle']
-    #     resp = context.session.get(
-    #         url=urljoin(
-    #             self.homepage,
-    #             '/onlinejudge/showRuns.do'
-    #             '?contestId=1&search=true'
-    #             '&firstId={}&lastId={}&problemCode='
-    #             '&handle={}&idStart={}&idEnd={}'.format(
-    #                 first_id, last_id, handle, id_start, id_end)
-    #         )
-    #     )
-    #     content = resp.content.decode(self.charset)
-    #     soup = BeautifulSoup(content, 'lxml')
-    #     rows = soup.select('table.list tr')[1:]
-    #     # next page link
-    #     groups = re.findall(r'JavaScript: goNext\((\d+)\);', content)
-    #     next_id = groups[0] if groups else None
-    #     return rows, next_id
-    #
-    # # def get_user_submission(self, context, submission_id):
-    # #     """ 获取用户的提交列表 """
-    # #     results = []
-    # #     next_id = -1
-    # #     # TODO: excludes 尚未实现
-    # #     while next_id:
-    # #         rows, next_id = self._query_submission(context, last_id=next_id)
-    # #         for row in rows[1:]:
-    # #             submission = self._parse_submission_row(context, row)
-    # #             results.append(submission)
-    # #             # print(submission.__dict__)
-    # #     return results
-    #
-    # def get_user_submission_list(self, context, excludes=()):
-    #     """ 获取用户的提交列表
-    #     TODO: 这个方法太重了，一跑起来没完没了，后面考虑一下优化的问题，将抓取任务切碎
-    #     """
-    #     results = []
-    #     next_id = -1
-    #     # TODO: excludes 尚未实现
-    #     while next_id:
-    #         rows, next_id = self._query_submission(context, last_id=next_id)
-    #         for row in rows[1:]:
-    #             submission = self._parse_submission_row(context, row)
-    #             # print(submission.id, submission.submit_time)
-    #             results.append(submission)
-    #             # print(submission.__dict__)
-    #     return results
-    #
-    # def submit_problem(self, context, problem_id, language, code, contest_id=None):
-    #     # 实际提交的 problemID 和题目的 problem_id 不一致，需要先抓过来转换一下
-    #     resp = context.session.get(urljoin(
-    #         self.homepage,
-    #         r'/onlinejudge/showProblem.do?problemCode={}'.format(problem_id)))
-    #     print('>>> origin problem_id = {}'.format(problem_id))
-    #     problem_id = re.findall(r'/onlinejudge/submit\.do\?problemId=(\d+)',
-    #                             resp.content.decode(self.charset))[0]
-    #     print('>>> actual problem_id = {}'.format(problem_id))
-    #     # 映射 language_id
-    #     from ojadapter.entity.Submission import Submission
-    #     language_id = {
-    #         Submission.LANGUAGE_C: 1,
-    #         Submission.LANGUAGE_GPP: 2,
-    #         Submission.LANGUAGE_PASCAL: 3,
-    #         Submission.LANGUAGE_JAVA: 4,
-    #         Submission.LANGUAGE_PYTHON2: 5,
-    #         Submission.LANGUAGE_PERL: 6,
-    #         Submission.LANGUAGE_SCHEME: 7,
-    #         Submission.LANGUAGE_PHP: 8,
-    #         Submission.LANGUAGE_CPP11: 9,
-    #     }.get(language)
-    #     # 提交代码
-    #     resp = context.session.post(
-    #         url=urljoin(self.homepage, '/onlinejudge/submit.do'),
-    #         data=dict(
-    #             problemId=problem_id,
-    #             languageId=language_id,
-    #             source=code,
-    #         ),
-    #     )
-    #     soup = BeautifulSoup(resp.content.decode(self.charset), 'lxml')
-    #     # print(soup)
-    #     submission_id = soup.select_one(r'#content_body font[color="red"]').text
-    #     print('>>> submission_id: {}'.format(submission_id))
-    #     # 获取结果
-    #     retry = 10
-    #     while True:
-    #         rows, next_id = self._query_submission(
-    #             context, id_end=submission_id, id_start=submission_id)
-    #         # print(rows, next_id)
-    #         # print(rows[0].select_one('.judgeReplyOther').text.strip())
-    #         submission = self._parse_submission_row(context, rows[0])
-    #         retry -= 1
-    #         if submission.result or not retry:
-    #             break
-    #         from time import sleep
-    #         sleep(11 - retry)
-    #     return submission
+
+    def _parse_submission_row(self, context, row):
+        status_map = {
+            'Accepted': Submission.RESULT_ACCEPTED,
+            'Presentation_Error': Submission.RESULT_PRESENTATION_ERROR,
+            'Wrong_Answer': Submission.RESULT_WRONG_ANSWER,
+            'Time_Limit_Exceeded': Submission.RESULT_TIME_LIMIT_EXCEED,
+            'Memory_Limit_Exceeded': Submission.RESULT_MEMORY_LIMIT_EXCEED,
+            'Compile_Error': Submission.RESULT_COMPILATION_ERROR,
+            'Output_Limit_Exceed': Submission.RESULT_OUTPUT_LIMIT_EXCEED,
+            'Runtime_Error': Submission.RESULT_RUNTIME_ERROR,
+        }
+        submission_id = row.select_one('td').text
+        problem_id = row.select('td')[2].text
+        td_lang = row.select('td')[6]
+        is_self = td_lang.select_one('a')
+        # print(row.select_one('.runJudgeStatus').text.strip())
+        submission = Submission(
+            id=submission_id,
+            submit_time=row.select('td')[8].text,
+            result=status_map.get(row.select('td')[3].text.strip()) or '',
+            problem_id=problem_id,
+            language=self.get_language_id_by(
+                'label', td_lang.select_one('a').text if is_self else td_lang.text),
+        )
+        if re.match(r'(\d+) ms', row.select('td')[5].text):
+            submission.run_time = int(re.match(r'(\d+) ms', row.select('td')[5].text).groups()[0])
+        if re.match(r'(\d+) kb', row.select('td')[4].text):
+            submission.run_memory = int(re.match(r'(\d+) kb', row.select('td')[4].text).groups()[0])
+        if is_self:
+            dom = request_dom(urljoin(
+                self.homepage,
+                '/JudgeOnline/submitpage.php?id={}&sid={}'.format(problem_id, submission_id)
+            ), self.charset, context)
+            submission.code = dom.select_one('textarea').decode_contents()
+        return submission
+
+    def _get_current_handle(self, context):
+        resp = context.session.get(urljoin(self.homepage, '/JudgeOnline/'))
+        content = resp.content.decode(self.charset)
+        matches = re.search(r'userinfo\.php\?user=([^\']+)', content)
+        if matches:
+            return matches.groups()[0]
+
+    def _query_submission(self, context, last_id=''):
+        self._get_current_handle(context)
+        resp = context.session.get(
+            url=urljoin(
+                self.homepage,
+                '/JudgeOnline/status.php?user_id={handle}&top={last_id}'.format(
+                    handle=self._get_current_handle(context), last_id=last_id)
+            )
+        )
+        content = resp.content.decode(self.charset)
+        soup = BeautifulSoup(content, 'lxml')
+        rows = soup.select('table[align=center] tr')[1:]
+        # next page link
+        matches = re.search(r'top=(\d+)&prevtop=(\d+)>Next Page</a', content)
+        if not matches:
+            return None
+        top, prev_top = matches.groups()
+        if rows[-1].select_one('td').text == top:
+            # 如果下一页的首个 ID 等于当前页最后一个ID说明已经没有下一页了
+            top = None
+        return rows, top
+
+    def get_user_submission_list(self, context, excludes=()):
+        """ 获取用户的提交列表
+        TODO: 这个方法太重了，一跑起来没完没了，后面考虑一下优化的问题，将抓取任务切碎
+        """
+        results = []
+        next_id = -1
+        # TODO: excludes 尚未实现
+        while next_id:
+            rows, next_id = self._query_submission(context, last_id=next_id)
+            for row in rows[1:]:
+                submission = self._parse_submission_row(context, row)
+                # print(submission.id, submission.submit_time)
+                results.append(submission)
+                # print(submission.__dict__)
+        return results
+
+    def submit_problem(self, context, problem_id, language, code, contest_id=None):
+        # 实际提交的 problemID 和题目的 problem_id 不一致，需要先抓过来转换一下
+        # 映射 language_id
+        # 提交代码
+        resp = context.session.post(
+            url=urljoin(self.homepage, '/JudgeOnline/submit.php'),
+            data=dict(
+                id=problem_id,
+                language=language,
+                source=code,
+            ),
+        )
+        soup = BeautifulSoup(resp.content.decode(self.charset), 'lxml')
+        submission_id = soup.select_one('tr.evenrow td').text
+        # print(submission_id)
+        # print('>>> submission_id: {}'.format(submission_id))
+        # 获取结果
+        retry = 10
+        while True:
+            rows, next_id = self._query_submission(context, submission_id)
+            # print(rows, next_id)
+            # print(rows[0].select_one('.judgeReplyOther').text.strip())
+            submission = self._parse_submission_row(context, rows[0])
+            retry -= 1
+            if submission.result or not retry:
+                break
+            from time import sleep
+            sleep(11 - retry)
+        return submission

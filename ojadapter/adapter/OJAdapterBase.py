@@ -1,6 +1,7 @@
 import os.path
 import tempfile
 import hashlib
+import urllib
 from urllib.parse import urljoin
 
 from ojadapter.entity.Submission import Submission
@@ -37,6 +38,16 @@ class OJAdapterBase(object):
     platform_username = 'actips'
     platform_password = 'Actips@2019'
     platform_email = 'admin@actips.org'
+
+    def __init__(self):
+        # 全局替换抓取的 User-Agent 防止有些网站闹别扭
+        from urllib.request import ProxyHandler, build_opener, install_opener
+        proxy = ProxyHandler({})
+        opener = build_opener(proxy)
+        opener.addheaders = [(
+            'User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) '
+                          'AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
+        install_opener(opener)
 
     # 工具方法
 

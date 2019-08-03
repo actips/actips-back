@@ -20,6 +20,11 @@ class UserContext(object):
             self.session = pickle.load(open(self.session_file_path, 'rb'))
         else:
             self.session = requests.Session()
+        # 统一限定 UserAgent 免得有些站点闹别扭
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) '
+                          'AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30'
+        })
 
     def save(self):
         file = open(self.session_file_path, 'wb')

@@ -327,19 +327,6 @@ class OJAdapterZOJ(OJAdapterBase):
         next_id = groups[0] if groups else None
         return rows, next_id
 
-    # def get_user_submission(self, context, submission_id):
-    #     """ 获取用户的提交列表 """
-    #     results = []
-    #     next_id = -1
-    #     # TODO: excludes 尚未实现
-    #     while next_id:
-    #         rows, next_id = self._query_submission(context, last_id=next_id)
-    #         for row in rows[1:]:
-    #             submission = self._parse_submission_row(context, row)
-    #             results.append(submission)
-    #             # print(submission.__dict__)
-    #     return results
-
     def get_user_submission_list(self, context, excludes=()):
         """ 获取用户的提交列表
         TODO: 这个方法太重了，一跑起来没完没了，后面考虑一下优化的问题，将抓取任务切碎

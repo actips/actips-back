@@ -156,6 +156,17 @@ class OnlineJudgeSite(models.Model):
     def __str__(self):
         return '[{}] {}'.format(self.code, self.name)
 
+    @classmethod
+    def ensure_site_by_adapter(cls, adapter):
+        site, is_created = cls.objects.get_or_create(code=adapter.code, defaults=dict(
+            name=adapter.name,
+            charset=adapter.charset,
+            homepage=adapter.homepage,
+            problem_url_template='~',
+            problem_title_regex='~',
+        ))
+        return site
+
     # def save(self, *args, **kwargs):
     #     if 'get_supported_languages' in self.get_supported_features():
     #         self.supported_languages = '|'.join(self.get_adapter().get_supported_languages().map(lambda d: str(d.get('id'))))

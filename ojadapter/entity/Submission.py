@@ -32,6 +32,7 @@ class Submission(object):
     LANGUAGE_RUST = 'RUST'
     LANGUAGE_CLANG = 'CLANG'
     LANGUAGE_NODEJS = 'NODEJS'
+    LANGUAGE_BASH = 'BASH'
     LANGUAGE_CHOICES = (
         (LANGUAGE_UNDEFINED, ''),
         (LANGUAGE_C, 'C'),
@@ -59,6 +60,7 @@ class Submission(object):
         (LANGUAGE_PERL, 'Perl'),
         (LANGUAGE_SCHEME, 'Scheme'),
         (LANGUAGE_PHP, 'PHP'),
+        (LANGUAGE_BASH, 'Bash'),
     )
 
     RESULT_UNDEFINED = ''

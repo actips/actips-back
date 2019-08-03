@@ -10,7 +10,8 @@ def pull_problems_all():
     :return:
     """
     results = []
-    for site in m.OnlineJudgeSite.objects.all():
+    for adapter in ALL_ADAPTERS.values():
+        site = m.OnlineJudgeSite.ensure_site_by_adapter(adapter)
         result = pull_problems_oj.delay(site.code)
         results.append(result.id)
     return results
@@ -22,10 +23,10 @@ def pull_problems_oj(oj_code):
     :param oj_code:
     :return:
     """
-    if oj_code not in ALL_ADAPTERS or \
-            not m.OnlineJudgeSite.objects.filter(code=oj_code).exists():
-        return False
-    adapter = ALL_ADAPTERS[oj_code]
+    adapter = ALL_ADAPTERS.get(oj_code)
+    if not adapter:
+        return None
+    site = m.OnlineJudgeSite.ensure_site_by_adapter(adapter)
     results = []
     for pid in adapter.get_all_problem_numbers():
         problem = m.OnlineJudgeProblem.objects.filter(
@@ -47,9 +48,10 @@ def pull_problem_oj(oj_code, problem_id, contest_id=''):
     :param contest_id:
     :return:
     """
-    site = m.OnlineJudgeSite.objects.filter(code=oj_code).first()
-    if not site:
+    adapter = ALL_ADAPTERS.get(oj_code)
+    if not adapter:
         return None
+    site = m.OnlineJudgeSite.ensure_site_by_adapter(adapter)
     problem = site.download_problem(problem_id, contest_id)
     return problem.id
 
@@ -57,9 +59,10 @@ def pull_problem_oj(oj_code, problem_id, contest_id=''):
 @app.task
 def pull_user_submissions_oj(oj_code, user_id):
     """ 抓取某个用户在指定OJ上的提交记录 """
-    site = m.OnlineJudgeSite.objects.filter(code=oj_code).first()
-    if not site:
+    adapter = ALL_ADAPTERS.get(oj_code)
+    if not adapter:
         return None
+    site = m.OnlineJudgeSite.ensure_site_by_adapter(adapter)
     profile = site.user_profiles.filter(user_id=user_id).first()
     if not profile:
         return
