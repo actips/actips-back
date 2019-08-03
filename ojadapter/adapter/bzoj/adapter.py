@@ -200,8 +200,7 @@ class OJAdapterBZOJ(OJAdapterBase):
             submit_time=row.select('td')[8].text,
             result=status_map.get(row.select('td')[3].text.strip()) or '',
             problem_id=problem_id,
-            language=self.get_language_id_by(
-                'label', td_lang.select_one('a').text if is_self else td_lang.text),
+            language_id=self.get_language_id_by('label', is_self.text if is_self else td_lang.text),
         )
         if re.match(r'(\d+) ms', row.select('td')[5].text):
             submission.run_time = int(re.match(r'(\d+) ms', row.select('td')[5].text).groups()[0])

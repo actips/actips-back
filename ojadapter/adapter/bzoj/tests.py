@@ -89,6 +89,7 @@ class TestAdapterBZOJ(TestCase):
         context = self.adapter.get_platform_user_context()
         submissions = self.adapter.get_user_submission_list(context)
         for sub in submissions:
+            self.assertTrue(sub.language_id)
             print(sub.__dict__)
         # context = self.adapter.get_user_context_by_user_and_password('fish_ball', '111111')
         # submissions = self.adapter.get_user_submission_list(context)
@@ -109,6 +110,7 @@ int main() {
         submission = self.adapter.submit_problem(
             context, 1010, self.adapter.get_language_id_by_language(Submission.LANGUAGE_CPP), code)
         self.assertEqual(submission.result, Submission.RESULT_OUTPUT_LIMIT_EXCEED)
+        self.assertEqual(submission.language_id, 1)
         from time import sleep
         print('wait for 10 seconds, to avoid "too fast" result')
         sleep(11)  # Or you will get a "Submit too fast" result
