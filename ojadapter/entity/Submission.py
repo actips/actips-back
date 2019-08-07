@@ -10,6 +10,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 class Submission(object):
     LANGUAGE_UNDEFINED = ''
+    LANGUAGE_RAW = 'RAW'
     LANGUAGE_C = 'C'
     LANGUAGE_CPP = 'CPP'
     LANGUAGE_JAVA = 'JAVA'
@@ -22,6 +23,7 @@ class Submission(object):
     LANGUAGE_PHP = 'PHP'
     LANGUAGE_RUBY = 'RUBY'
     LANGUAGE_CSHARP = 'CSHARP'
+    LANGUAGE_VB = 'VB'
     LANGUAGE_HASKELL = 'HASKELL'
     LANGUAGE_OCAML = 'OCAML'
     LANGUAGE_SCALA = 'SCALA'
@@ -35,11 +37,9 @@ class Submission(object):
     LANGUAGE_BASH = 'BASH'
     LANGUAGE_CHOICES = (
         (LANGUAGE_UNDEFINED, ''),
+        (LANGUAGE_RAW, 'Raw'),
         (LANGUAGE_C, 'C'),
         (LANGUAGE_CPP, 'C++'),
-        # (LANGUAGE_GCC, 'GCC'), => CPP
-        # (LANGUAGE_GPP, 'G++'), => CPP
-        # (LANGUAGE_CPP11, 'C++11'), => CPP
         (LANGUAGE_JAVA, 'Java'),
         (LANGUAGE_PYTHON2, 'Python2'),
         (LANGUAGE_PYTHON3, 'Python3'),
@@ -47,6 +47,7 @@ class Submission(object):
         (LANGUAGE_DELPHI, 'Delphi'),
         (LANGUAGE_RUBY, 'Ruby'),
         (LANGUAGE_CSHARP, 'C#'),
+        (LANGUAGE_VB, 'Visual Basic'),
         (LANGUAGE_HASKELL, 'Haskell'),
         (LANGUAGE_OCAML, 'OCaml'),
         (LANGUAGE_SCALA, 'Scala'),

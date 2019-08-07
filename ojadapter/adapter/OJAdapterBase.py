@@ -257,7 +257,7 @@ class OJAdapterBase(object):
         """ 获取并返回一个问题对象 """
         from ..utils import request_text
         url = self.get_problem_url(problem_id, contest_id)
-        html = request_text(url)
+        html = request_text(url, self.charset)
         problem = self.parse_problem(html, url)
         problem.id = problem_id
         problem.contest_id = contest_id

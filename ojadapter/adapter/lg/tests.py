@@ -4,10 +4,10 @@ from unittest import TestCase
 from .adapter import *
 
 
-class TestAdapterBZOJ(TestCase):
+class TestAdapterLG(TestCase):
 
     def __init__(self, *args, **kwargs):
-        self.adapter = OJAdapterBZOJ()
+        self.adapter = OJAdapterLG()
         super().__init__(*args, **kwargs)
 
     # def test_01_get_all_contest_numbers(self):
@@ -18,10 +18,11 @@ class TestAdapterBZOJ(TestCase):
         print('输出所有的站内题目编号')
         numbers = self.adapter.get_all_problem_numbers()
         print(numbers)
-        # 有效题数在 2000-1000 之间
-        self.assertGreater(len(numbers), 2000)
-        self.assertLess(len(numbers), 10000)
-        self.assertEqual(numbers[0], 1000)
+        print(len(numbers))
+        # 有效题数在  之间
+        # self.assertGreater(len(numbers), 2000)
+        # self.assertLess(len(numbers), 10000)
+        # self.assertEqual(numbers[0], 1000)
 
     def test_03_get_problem_url(self):
         url = self.adapter.get_problem_url('1000')
@@ -48,15 +49,11 @@ class TestAdapterBZOJ(TestCase):
         self.assertEqual(problem.input_samples[0], '3 4\n5 6 4\n4 3 1\n7 5 3\n5 6 7 8\n8 7 6 5\n5 5 5\n6 6 6')
         self.assertEqual(len(problem.output_samples), 1)
         self.assertEqual(problem.output_samples[0], '14')
-        self.assertFalse(problem.is_special_judge)
         # 1017 有些软换行需要处理掉，不然会在不应该的地方被分段
         problem = self.adapter.download_problem('1017')
         problem.print()
         # 5509 这个有 pdf 内链，有条件还是抓下来。
         # 不过还一堆没有描述的问题，这个还是放弃执念吧。
-        # 3098 是 Special Judge
-        problem = self.adapter.download_problem('3098')
-        self.assertTrue(problem.is_special_judge)
 
     # def test_06_download_problem(self):
     #     problem = self.adapter.download_problem('1184A3')

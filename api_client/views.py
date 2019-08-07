@@ -203,6 +203,9 @@ class OnlineJudgeSubmissionViewSet(mixins.ListModelMixin,
     serializer_class = s.OnlineJudgeSubmissionSerializer
     filter_fields = '__all__'
     ordering = ['-pk']
+    allowed_deep_params = [
+        'problem__site',
+    ]
 
 
 class ProblemPostViewSet(mixins.CreateModelMixin,

@@ -75,6 +75,7 @@ class TestAdapterCodeforces(TestCase):
         self.assertEqual(problem.input_samples[0], '7\n1 2 3 1 2 3 4')
         self.assertEqual(len(problem.output_samples), 4)
         self.assertEqual(problem.output_samples[0], '2\n3 4 ')
+        # TODO: 100J 有 <sub>/<sup> 的上下标内容，需要保留
 
     def test_06_download_problem(self):
         problem = self.adapter.download_problem('1184A3')

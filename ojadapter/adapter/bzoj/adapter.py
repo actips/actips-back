@@ -136,6 +136,7 @@ class OJAdapterBZOJ(OJAdapterBase):
                 matches = re.search(r'Memory Limit:\s+</span>\s*(\d+(?:\.\d+)?)\s+MB', block_content)
                 if matches:
                     problem.memory_limit = int(matches.groups()[0]) * 1024
+                problem.is_special_judge = 'Special Judge' in block_content
             elif block.name == 'h2':
                 if block_content in {'Description', 'Input', 'Output',
                                      'Sample Input', 'Sample Output', 'HINT', 'Source'}:
@@ -252,7 +253,7 @@ class OJAdapterBZOJ(OJAdapterBase):
         # TODO: excludes 尚未实现
         while next_id:
             rows, next_id = self._query_submission(context, last_id=next_id)
-            for row in rows[1:]:
+            for row in rows:
                 submission = self._parse_submission_row(context, row)
                 # print(submission.id, submission.submit_time)
                 results.append(submission)
