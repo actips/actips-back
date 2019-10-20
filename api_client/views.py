@@ -150,6 +150,36 @@ class OnlineJudgeSiteViewSet(mixins.ListModelMixin,
         # TODO: 需要返回更实质性的内容
         return u.response_success('获取成功', silent=True)
 
+    @action(methods=['GET', 'POST'], detail=True)
+    def proxy(self, request, pk):
+        path = request.query_params.get('path')
+        site = self.get_object()
+        adapter = site.get_adapter()
+        import requests
+        from django.http import HttpResponse
+        from urllib.parse import urljoin
+        resp = requests.get(urljoin(adapter.homepage, path))
+        content_bytes = resp.content
+        if resp.headers['Content-Type'].startswith('text/html'):
+            content = resp.content.decode(adapter.charset)
+            content = content.replace('</body>', '''
+            <script>
+            jQuery(function($) {
+                (document).on('form', 'submit', function() {
+                    console.log(arguments);
+                    return false;
+                });
+            });
+            alert(1);
+            </script>
+            </body>''')
+            content_bytes = content.encode(adapter.charset)
+        return HttpResponse(
+            content=content_bytes,
+            status=resp.status_code,
+            content_type=resp.headers['Content-Type'],
+        )
+
 
 class OnlineJudgeProblemViewSet(mixins.ListModelMixin,
                                 mixins.RetrieveModelMixin,

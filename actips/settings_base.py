@@ -9,10 +9,12 @@ INSTALLED_APPS += [
     'ojadapter',
     'ojtasks',
     'django_base.base_media',
+    # 用于代理登录反向代理目标 OJ，https://github.com/jazzband/django-hosts
+    'django_hosts',
 ]
 
-MIDDLEWARE += [
-]
+MIDDLEWARE.insert(0, 'django_hosts.middleware.HostsRequestMiddleware')
+MIDDLEWARE.append('django_hosts.middleware.HostsResponseMiddleware')
 
 MIDDLEWARE.remove('django.middleware.csrf.CsrfViewMiddleware')
 #
@@ -29,7 +31,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # ============== URLS ================
 
+ROOT_HOSTCONF = 'core.hosts'
 ROOT_URLCONF = 'core.urls'
+DEFAULT_HOST = 'default'
 
 # ============== REST FRAMEWORK ================
 

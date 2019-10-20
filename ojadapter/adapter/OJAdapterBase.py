@@ -164,7 +164,7 @@ class OJAdapterBase(object):
 
     def get_language_by_id(self, id):
         for lang in self.get_supported_languages():
-            if id and str(lang.get('id')) == str(id):
+            if str(lang.get('id')) == str(id):
                 return lang
         return None
 

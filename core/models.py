@@ -358,6 +358,12 @@ class OnlineJudgeUserProfile(DatedModel):
         db_table = 'core_online_judge_user_profile'
         unique_together = ['site', 'user']
 
+    def delete(self, *args, **kwargs):
+        # 删除的时候要清掉 context 缓存文件
+        from ojadapter.entity.UserContext import UserContext
+        UserContext.destroy(self.session_info)
+        super().delete(*args, **kwargs)
+
     def get_context(self):
         from ojadapter.entity.UserContext import UserContext
         return UserContext(self.session_info)

@@ -35,5 +35,12 @@ class UserContext(object):
         if os.path.isfile(self.session_file_path):
             os.remove(self.session_file_path)
 
+    @staticmethod
+    def destroy(context_id):
+        """ 销毁一个 context_id 的缓存文件 """
+        session_file = os.path.join(BASE_DIR, '.session', context_id)
+        if os.path.isfile(session_file):
+            os.remove(session_file)
+
     def print(self):
         [print('>>>>', k, '>>>>\n' + str(v), '\n<<<<\n') for k, v in self.__dict__.items()]
