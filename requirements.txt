@@ -35,6 +35,7 @@ django-extra-fields==1.0.0
 django-filter==2.1.0
 django-fullclean==0.0.4
 django-grappelli==2.11.1
+django-hosts==3.0
 django-ipware==2.1.0
 django-rest-swagger==2.2.0
 django-reversion==2.0.13
