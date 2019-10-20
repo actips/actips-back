@@ -41,6 +41,8 @@ class OnlineJudgeProblemSerializer(serializers.ModelSerializer):
 
 
 class OnlineJudgeSubmissionSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(
+        queryset=m.User.objects.all(), required=False)
     problem_num = serializers.ReadOnlyField(source='problem.num')
     problem_title = serializers.ReadOnlyField(source='problem.title')
 
@@ -59,7 +61,7 @@ class ProblemCategorySerializer(serializers.ModelSerializer):
 
 class ProblemPostSerializer(serializers.ModelSerializer):
     author = serializers.PrimaryKeyRelatedField(
-        read_only=True)
+        queryset=m.User.objects.all(), required=False)
     problem_title = serializers.ReadOnlyField(
         source='problem.title')
     problem_site_code = serializers.ReadOnlyField(
@@ -90,6 +92,8 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(
+        queryset=m.User.objects.all(), required=False)
     author_nickname = serializers.ReadOnlyField(
         source='author.member.nickname')
     parent_nickname = serializers.ReadOnlyField(
