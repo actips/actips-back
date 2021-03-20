@@ -57,7 +57,7 @@ imagesize==1.0.0
 incremental==17.5.0
 itypes==1.1.0
 jieba==0.39
-Jinja2==2.10.1
+Jinja2==2.11.3
 jmespath==0.9.3
 jpush==3.3.0
 kombu==4.5.0
