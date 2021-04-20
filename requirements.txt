@@ -78,7 +78,7 @@ parsel==1.4.0
 pika==1.0.1
 Pillow==5.1.0
 pluggy==0.11.0
-py==1.8.0
+py==1.10.0
 pyaml==17.12.1
 PyAMQP==0.0.7.3
 pyasn1==0.4.2
