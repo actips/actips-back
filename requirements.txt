@@ -62,7 +62,7 @@ jmespath==0.9.3
 jpush==3.3.0
 kombu==4.5.0
 librabbitmq==2.0.0
-lxml==4.2.1
+lxml==4.6.5
 Markdown==2.6.11
 MarkupSafe==1.0
 more-itertools==7.0.0
