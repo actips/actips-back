@@ -12,7 +12,7 @@ Babel==2.5.3
 beautifulsoup4==4.6.0
 billiard==3.6.0.0
 bitarray==0.8.3
-celery==4.3.0
+celery==5.2.2
 certifi==2018.4.16
 cffi==1.11.5
 chardet==3.0.4
